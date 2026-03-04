@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
-/**
+/*
  * [역할]
  * 사용자 취소(개인 환불) 전용 서비스
  * - 실제 돈이 오가는것이 아니라서 취소 상태만 가진다.

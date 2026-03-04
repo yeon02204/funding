@@ -10,14 +10,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 
 
-/**
+/*
  * [역할]
- * - 후원 환불 전용 서비스
+ * 후원 환불 전용 서비스
  *
  * [책임]
- * - 환불 가능 상태 검증은 enum에서
- * - SUCCESS → REFUND 전이
- * - 환불 처리 시간 기록
+ * SUCCESS → REFUND 전이
+ * 환불 처리 시간 기록
  */
 @Service
 @RequiredArgsConstructor

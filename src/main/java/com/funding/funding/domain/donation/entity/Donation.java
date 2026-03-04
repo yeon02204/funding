@@ -9,7 +9,7 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 
-// 임시 엔티티(정연 버전)
+// 후원 도메인 엔티티 (상태 기반 후원 관리)
 @Getter
 @Setter
 @NoArgsConstructor
