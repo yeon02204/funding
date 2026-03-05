@@ -14,7 +14,4 @@ public class FundingApplication {
 
 }
 
-<<<<<<< HEAD
-=======
-// 프로젝트 전체에서 스케줄링 기능을 켜놓음
->>>>>>> main
+
