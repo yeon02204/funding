@@ -1,2 +1,2 @@
-﻿package com.funding.funding.domain.user.entity;
+package com.funding.funding.domain.user.entity;
 

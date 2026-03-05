@@ -1,0 +1,12 @@
+*   [33mf772692[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Merge pull request #2 from lshasd610-del/feature/project
+[31m|[m[32m\[m  
+[31m|[m * [33m16b6b22[m feat: implement project domain structure and status transition logic
+[31m|[m[31m/[m  
+[31m|[m * [33m6573fc8[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/donation-domain[m[33m, [m[1;31morigin/feature/donation-domain[m[33m)[m feat: donation domain implementation with tests
+[31m|[m * [33m52a4290[m feat: donation domain core logic
+[31m|[m * [33m34e3fe8[m feat: donation domain core logic
+[31m|[m[31m/[m  
+* [33m719741a[m[33m ([m[1;32mmain[m[33m)[m chore: add package-info to empty packages
+* [33mfb8dc42[m chore: remove gitkeep files
+* [33m7a66368[m chore: add .gitkeep to preserve empty package structure
+* [33m5c0a474[m[33m ([m[1;31morigin/master[m[33m)[m init: initial project setup

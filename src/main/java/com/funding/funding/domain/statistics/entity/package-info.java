@@ -1,2 +1,2 @@
-﻿package com.funding.funding.domain.statistics.entity;
+package com.funding.funding.domain.statistics.entity;
 

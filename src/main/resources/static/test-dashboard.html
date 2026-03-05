@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>API Debug Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <style>
+        /* ─── CSS Variables & Reset ─── */
+        :root {
+            --bg-base:    #0f1117;
+            --bg-card:    #161b27;
+            --bg-hover:   #1e2535;
+            --bg-input:   #1a2030;
+            --border:     #2a3347;
+            --border-mid: #3a4a63;
+
+            --text-primary:   #e4eaf5;
+            --text-secondary: #7a8fb0;
+            --text-mono:      #a8c0e8;
+
+            --accent:   #4f8ef7;
+            --accent-h: #6ba3ff;
+            --green:    #3ecf8e;
+            --yellow:   #f5c842;
+            --red:      #f05b5b;
+            --orange:   #f0894a;
+
+            --radius:  6px;
+            --radius-lg: 10px;
+            --shadow:  0 2px 12px rgba(0,0,0,.45);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'IBM Plex Sans KR', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* ─── Layout ─── */
+        #app {
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            min-height: 100vh;
+        }
+
+        header {
+            padding: 14px 28px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: var(--bg-card);
+        }
+        header .logo {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent);
+            letter-spacing: .05em;
+            background: rgba(79,142,247,.12);
+            padding: 4px 10px;
+            border-radius: var(--radius);
+            border: 1px solid rgba(79,142,247,.25);
+        }
+        header h1 {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        header .sep { flex: 1; }
+        #base-url-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #base-url-wrap label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+        #base-url {
+            width: 260px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 5px 10px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-mid);
+            border-radius: var(--radius);
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color .2s;
+        }
+        #base-url:focus { border-color: var(--accent); }
+
+        main {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            grid-template-rows: auto auto 1fr;
+            gap: 16px;
+            padding: 20px 24px;
+            align-content: start;
+        }
+
+        /* ─── Cards ─── */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 18px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(255,255,255,.02);
+        }
+        .card-header h2 {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: .08em;
+        }
+        .card-header .badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            padding: 2px 7px;
+            border-radius: 20px;
+            background: rgba(79,142,247,.15);
+            color: var(--accent);
+            border: 1px solid rgba(79,142,247,.2);
+        }
+        .card-body { padding: 16px 18px; }
+
+        /* ─── Section placement ─── */
+        #project-list-section  { grid-column: 1 / 2; grid-row: 1; }
+        #project-detail-section { grid-column: 2 / 3; grid-row: 1 / 4; }
+        #donation-section      { grid-column: 1 / 2; grid-row: 2; }
+
+        /* ─── Tables ─── */
+        .tbl-wrap { overflow-x: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        thead th {
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(255,255,255,.02);
+        }
+        tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background .15s;
+            cursor: default;
+        }
+        tbody tr:last-child { border-bottom: none; }
+        tbody tr:hover { background: var(--bg-hover); }
+        tbody tr.selected { background: rgba(79,142,247,.1); }
+        tbody td { padding: 9px 12px; vertical-align: middle; }
+        tbody td.mono {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-mono);
+        }
+
+        /* ─── Status Badges ─── */
+        .status {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 20px;
+            display: inline-block;
+            white-space: nowrap;
+        }
+        .status-DRAFT            { background: rgba(122,143,176,.15); color: #7a8fb0; border: 1px solid rgba(122,143,176,.25); }
+        .status-REVIEW_REQUESTED { background: rgba(245,200,66,.12);  color: var(--yellow); border: 1px solid rgba(245,200,66,.25); }
+        .status-APPROVED         { background: rgba(62,207,142,.12);  color: var(--green);  border: 1px solid rgba(62,207,142,.25); }
+        .status-FUNDING          { background: rgba(79,142,247,.12);  color: var(--accent); border: 1px solid rgba(79,142,247,.25); }
+        .status-SUCCESS          { background: rgba(62,207,142,.2);   color: var(--green);  border: 1px solid rgba(62,207,142,.35); }
+        .status-FAILED           { background: rgba(240,91,91,.12);   color: var(--red);    border: 1px solid rgba(240,91,91,.25); }
+        .status-STOPPED          { background: rgba(240,137,74,.12);  color: var(--orange); border: 1px solid rgba(240,137,74,.25); }
+        .status-DELETE_REQUESTED { background: rgba(240,91,91,.08);   color: #c07070;       border: 1px solid rgba(240,91,91,.18); }
+        .status-DELETED          { background: rgba(60,60,70,.3);     color: #555e70;       border: 1px solid rgba(80,80,100,.2); }
+        .status-PENDING          { background: rgba(122,143,176,.15); color: #7a8fb0; border: 1px solid rgba(122,143,176,.25); }
+        .status-CANCEL           { background: rgba(240,137,74,.12);  color: var(--orange); border: 1px solid rgba(240,137,74,.25); }
+        .status-REFUND           { background: rgba(240,91,91,.12);   color: var(--red);    border: 1px solid rgba(240,91,91,.25); }
+
+        /* ─── Buttons ─── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-family: 'IBM Plex Sans KR', sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 6px 13px;
+            border: 1px solid transparent;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all .15s;
+            white-space: nowrap;
+        }
+        .btn:disabled { opacity: .45; cursor: not-allowed; }
+        .btn-primary  { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .btn-primary:not(:disabled):hover { background: var(--accent-h); border-color: var(--accent-h); }
+        .btn-outline  { background: transparent; color: var(--text-secondary); border-color: var(--border-mid); }
+        .btn-outline:not(:disabled):hover { color: var(--text-primary); border-color: var(--accent); background: rgba(79,142,247,.07); }
+        .btn-ghost    { background: transparent; color: var(--text-secondary); border-color: var(--border); }
+        .btn-ghost:not(:disabled):hover { background: var(--bg-hover); color: var(--text-primary); }
+        .btn-danger   { background: rgba(240,91,91,.12); color: var(--red); border-color: rgba(240,91,91,.3); }
+        .btn-danger:not(:disabled):hover { background: rgba(240,91,91,.22); }
+        .btn-success  { background: rgba(62,207,142,.12); color: var(--green); border-color: rgba(62,207,142,.3); }
+        .btn-success:not(:disabled):hover { background: rgba(62,207,142,.22); }
+        .btn-warning  { background: rgba(245,200,66,.1); color: var(--yellow); border-color: rgba(245,200,66,.3); }
+        .btn-warning:not(:disabled):hover { background: rgba(245,200,66,.2); }
+        .btn-sm { font-size: 11px; padding: 4px 9px; }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        /* ─── Inputs ─── */
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .input-row label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            min-width: 60px;
+            font-weight: 500;
+        }
+        input[type="text"], input[type="number"] {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 6px 10px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-mid);
+            border-radius: var(--radius);
+            color: var(--text-primary);
+            width: 100%;
+            outline: none;
+            transition: border-color .2s;
+        }
+        input:focus { border-color: var(--accent); }
+
+        /* ─── Detail Panel ─── */
+        #project-detail-section .card-body { padding: 0; }
+        #detail-empty {
+            padding: 40px 18px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+        #detail-empty .icon { font-size: 28px; margin-bottom: 10px; opacity: .4; }
+
+        .detail-kv {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+        }
+        .detail-kv .kv-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+        .detail-kv .kv-row:last-child { margin-bottom: 0; }
+        .detail-kv .kv-key {
+            min-width: 110px;
+            color: var(--text-secondary);
+            font-size: 11px;
+            padding-top: 2px;
+        }
+        .detail-kv .kv-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-mono);
+            word-break: break-all;
+        }
+
+        .transition-grid {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+        }
+        .transition-grid h3 {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            margin-bottom: 10px;
+        }
+        .transition-grid .btn-group { margin-top: 0; }
+
+        /* ─── Donation sub-section ─── */
+        .donation-id-box {
+            background: var(--bg-input);
+            border: 1px solid var(--border-mid);
+            border-radius: var(--radius);
+            padding: 8px 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--green);
+            margin: 10px 0;
+            min-height: 34px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .donation-id-box .label {
+            font-family: 'IBM Plex Sans KR', sans-serif;
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        /* ─── Donation Table ─── */
+        #donation-list-wrap { margin-top: 14px; }
+        #donation-list-wrap h3 {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            margin-bottom: 8px;
+        }
+
+        /* ─── Log Panel ─── */
+        #log-section {
+            grid-column: 1 / 3;
+            border-top: 1px solid var(--border);
+            background: var(--bg-base);
+            padding: 0;
+        }
+        #log-section .log-topbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-card);
+        }
+        #log-section .log-topbar h2 {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--text-secondary);
+        }
+        #log-section .log-topbar .sep { flex: 1; }
+        #log-entries {
+            height: 280px;
+            overflow-y: auto;
+            padding: 12px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            scroll-behavior: smooth;
+        }
+        #log-entries::-webkit-scrollbar { width: 6px; }
+        #log-entries::-webkit-scrollbar-track { background: transparent; }
+        #log-entries::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 3px; }
+
+        .log-entry {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            animation: fadeIn .2s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+        .log-entry-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 7px 12px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(255,255,255,.015);
+            cursor: pointer;
+            user-select: none;
+        }
+        .log-entry-head:hover { background: rgba(255,255,255,.03); }
+        .log-method {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 7px;
+            border-radius: 4px;
+        }
+        .method-GET  { background: rgba(62,207,142,.15);  color: var(--green);  }
+        .method-POST { background: rgba(79,142,247,.15);  color: var(--accent); }
+        .method-PUT  { background: rgba(245,200,66,.13);  color: var(--yellow); }
+        .method-DELETE { background: rgba(240,91,91,.13); color: var(--red);    }
+
+        .log-url  { color: var(--text-primary); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .log-status { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
+        .log-status.ok  { background: rgba(62,207,142,.12); color: var(--green); }
+        .log-status.err { background: rgba(240,91,91,.12);  color: var(--red);   }
+        .log-time { color: var(--text-secondary); font-size: 10px; white-space: nowrap; }
+        .log-toggle { color: var(--text-secondary); font-size: 10px; }
+
+        .log-entry-body {
+            padding: 10px 14px;
+            display: none;
+        }
+        .log-entry-body.open { display: block; }
+        .log-entry-body pre {
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: var(--text-mono);
+            font-size: 11px;
+            line-height: 1.7;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+        .log-entry-body pre::-webkit-scrollbar { width: 5px; }
+        .log-entry-body pre::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 3px; }
+
+        .log-empty {
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        /* ─── Loading spinner ─── */
+        .spinner {
+            display: inline-block;
+            width: 10px; height: 10px;
+            border: 2px solid rgba(255,255,255,.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin .5s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ─── Refresh btn ─── */
+        .refresh-btn {
+            font-size: 13px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 4px;
+            border-radius: 4px;
+            transition: color .15s, transform .2s;
+        }
+        .refresh-btn:hover { color: var(--accent); }
+        .refresh-btn.spinning { animation: spin .6s linear infinite; }
+
+        /* ─── Divider ─── */
+        .divider { height: 1px; background: var(--border); margin: 12px 0; }
+
+        /* ─── Scrollbar global ─── */
+        * { scrollbar-width: thin; scrollbar-color: var(--border-mid) transparent; }
+
+        /* ─── no-select ─── */
+        .no-select { user-select: none; }
+    </style>
+</head>
+<body>
+<div id="app">
+
+    <!-- ─────────────────────────── HEADER ─────────────────────────── -->
+    <header>
+        <span class="logo">DEBUG</span>
+        <h1>API Dashboard</h1>
+        <div class="sep"></div>
+        <div id="base-url-wrap">
+            <label>Base URL</label>
+            <input id="base-url" type="text" value="http://localhost:8080" />
+        </div>
+    </header>
+
+    <!-- ─────────────────────────── MAIN ─────────────────────────── -->
+    <main>
+
+        <!-- ── [1] 프로젝트 목록 ── -->
+        <section id="project-list-section" class="card">
+            <div class="card-header">
+                <h2>Projects</h2>
+                <span class="badge" id="project-count">0</span>
+                <div style="flex:1"></div>
+                <button class="refresh-btn" id="refresh-projects-btn" title="새로고침" onclick="loadProjects()">↻</button>
+            </div>
+            <div class="tbl-wrap">
+                <table id="project-table">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>상태</th>
+                        <th>목표금액</th>
+                        <th>선택</th>
+                    </tr>
+                    </thead>
+                    <tbody id="project-tbody">
+                    <tr><td colspan="4" style="text-align:center;color:var(--text-secondary);padding:20px;font-size:12px;">로딩 중...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ── [2] 프로젝트 상세 + 상태 전이 (우측 패널) ── -->
+        <section id="project-detail-section" class="card">
+            <div class="card-header">
+                <h2>Project Detail</h2>
+                <span class="badge" id="selected-id-badge">—</span>
+            </div>
+            <div id="detail-content">
+                <div id="detail-empty">
+                    <div class="icon">📋</div>
+                    프로젝트를 선택하세요
+                </div>
+            </div>
+        </section>
+
+        <!-- ── [3] 후원 섹션 ── -->
+        <section id="donation-section" class="card">
+            <div class="card-header">
+                <h2>Donations</h2>
+                <span class="badge" id="donation-count">0</span>
+                <div style="flex:1"></div>
+                <button class="refresh-btn" id="refresh-donations-btn" title="후원 목록 새로고침" onclick="loadDonations()">↻</button>
+            </div>
+            <div class="card-body">
+
+                <!-- 후원 생성 폼 -->
+                <div class="input-row">
+                    <label>User ID</label>
+                    <input id="donation-user-id" type="text" placeholder="ex) 1" />
+                </div>
+                <div class="input-row">
+                    <label>Amount</label>
+                    <input id="donation-amount" type="number" placeholder="ex) 10000" />
+                </div>
+                <button class="btn btn-primary" onclick="createDonation()">
+                    <span>후원 생성</span>
+                </button>
+
+                <!-- 생성된 donationId 표시 -->
+                <div class="donation-id-box">
+                    <span class="label">donation ID</span>
+                    <span id="current-donation-id">—</span>
+                </div>
+
+                <!-- 후원 상태 전이 버튼 -->
+                <div class="btn-group">
+                    <button class="btn btn-success btn-sm" onclick="updateDonation('success')">✓ Success</button>
+                    <button class="btn btn-warning btn-sm" onclick="updateDonation('cancel')">✕ Cancel</button>
+                    <button class="btn btn-danger btn-sm" onclick="updateDonation('refund')">↩ Refund</button>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- 프로젝트별 후원 목록 -->
+                <div id="donation-list-wrap">
+                    <h3>해당 프로젝트 후원 목록</h3>
+                    <div class="tbl-wrap">
+                        <table>
+                            <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User</th>
+                                <th>Amount</th>
+                                <th>상태</th>
+                            </tr>
+                            </thead>
+                            <tbody id="donation-tbody">
+                            <tr><td colspan="4" style="text-align:center;color:var(--text-secondary);padding:14px;font-size:12px;">프로젝트를 선택하세요</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main><!-- /main -->
+
+    <!-- ─────────────────────────── LOG PANEL ─────────────────────────── -->
+    <footer id="log-section">
+        <div class="log-topbar">
+            <h2>Request Log</h2>
+            <span class="badge" id="log-count">0</span>
+            <div class="sep"></div>
+            <button class="btn btn-ghost btn-sm" onclick="clearLogs()">로그 지우기</button>
+        </div>
+        <div id="log-entries">
+            <div class="log-empty" id="log-empty-msg">API를 호출하면 로그가 여기에 표시됩니다</div>
+        </div>
+    </footer>
+
+</div><!-- /app -->
+
+<script>
+    /* ═══════════════════════════════════════════
+       전역 상태
+       ═══════════════════════════════════════════ */
+    let selectedProjectId = null;   // 현재 선택된 프로젝트 ID
+    let currentDonationId = null;   // 마지막으로 생성된 후원 ID
+    let logCount = 0;               // 로그 카운터
+
+    /* BASE URL 읽기 */
+    function base() {
+        return document.getElementById('base-url').value.replace(/\/$/, '');
+    }
+
+    /* ═══════════════════════════════════════════
+       공통 fetch 유틸리티
+       - method, url, body를 받아 요청을 실행
+       - 응답을 로그 패널에 출력
+       ═══════════════════════════════════════════ */
+    async function api(method, path, body = null) {
+        const url = base() + path;
+        const options = {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+        };
+        if (body !== null) options.body = JSON.stringify(body);
+
+        const startTime = performance.now();
+        let status = '—';
+        let responseData = null;
+        let isOk = false;
+
+        try {
+            const res = await fetch(url, options);
+            status = res.status;
+            isOk = res.ok;
+
+            const contentType = res.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+                responseData = await res.json();
+            } else {
+                responseData = await res.text();
+            }
+        } catch (err) {
+            // 네트워크 에러 처리
+            responseData = { error: err.message };
+            status = 'ERR';
+            isOk = false;
+        }
+
+        const elapsed = Math.round(performance.now() - startTime);
+        addLog(method, url, status, responseData, elapsed, isOk);
+
+        return { ok: isOk, status, data: responseData };
+    }
+
+    /* ═══════════════════════════════════════════
+       로그 패널
+       ═══════════════════════════════════════════ */
+    function addLog(method, url, status, data, ms, isOk) {
+        logCount++;
+        const container = document.getElementById('log-entries');
+        document.getElementById('log-empty-msg')?.remove();
+        document.getElementById('log-count').textContent = logCount;
+
+        const now = new Date();
+        const timeStr = now.toTimeString().slice(0, 8);
+
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+
+        const statusClass = isOk ? 'ok' : 'err';
+        const methodClass = `method-${method}`;
+
+        entry.innerHTML = `
+    <div class="log-entry-head" onclick="toggleLog(this)">
+      <span class="log-method ${methodClass}">${method}</span>
+      <span class="log-url">${url}</span>
+      <span class="log-status ${statusClass}">${status}</span>
+      <span class="log-time">${ms}ms · ${timeStr}</span>
+      <span class="log-toggle">▼</span>
+    </div>
+    <div class="log-entry-body open">
+      <pre>${JSON.stringify(data, null, 2)}</pre>
+    </div>
+  `;
+
+        container.prepend(entry);   // 최신 로그를 위에 표시
+    }
+
+    function toggleLog(head) {
+        const body = head.nextElementSibling;
+        const toggle = head.querySelector('.log-toggle');
+        body.classList.toggle('open');
+        toggle.textContent = body.classList.contains('open') ? '▼' : '▶';
+    }
+
+    function clearLogs() {
+        const container = document.getElementById('log-entries');
+        container.innerHTML = '<div class="log-empty" id="log-empty-msg">API를 호출하면 로그가 여기에 표시됩니다</div>';
+        logCount = 0;
+        document.getElementById('log-count').textContent = 0;
+    }
+
+    /* ═══════════════════════════════════════════
+       유틸: 버튼 로딩 상태
+       ═══════════════════════════════════════════ */
+    function setLoading(btn, loading) {
+        if (!btn) return;
+        if (loading) {
+            btn._origHTML = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner"></span>';
+            btn.disabled = true;
+        } else {
+            btn.innerHTML = btn._origHTML || btn.innerHTML;
+            btn.disabled = false;
+        }
+    }
+
+    /* ═══════════════════════════════════════════
+       프로젝트 목록 조회
+       GET /projects
+       ═══════════════════════════════════════════ */
+    async function loadProjects() {
+        const btn = document.getElementById('refresh-projects-btn');
+        btn.classList.add('spinning');
+        btn.disabled = true;
+
+        const { ok, data } = await api('GET', '/projects');
+
+        btn.classList.remove('spinning');
+        btn.disabled = false;
+
+        if (!ok || !Array.isArray(data)) {
+            renderProjectTable([]);
+            return;
+        }
+
+        renderProjectTable(data);
+        document.getElementById('project-count').textContent = data.length;
+    }
+
+    /* 프로젝트 테이블 렌더링 */
+    function renderProjectTable(projects) {
+        const tbody = document.getElementById('project-tbody');
+        if (!projects.length) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-secondary);padding:20px;font-size:12px;">프로젝트 없음</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = projects.map(p => `
+    <tr id="tr-${p.id}" class="${selectedProjectId == p.id ? 'selected' : ''}">
+      <td class="mono">${p.id}</td>
+      <td><span class="status status-${p.status}">${p.status}</span></td>
+      <td class="mono">${p.goalAmount != null ? p.goalAmount.toLocaleString() : '—'}</td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick="selectProject(${p.id})">선택</button>
+      </td>
+    </tr>
+  `).join('');
+    }
+
+    /* ═══════════════════════════════════════════
+       프로젝트 선택
+       GET /projects/{id}
+       ═══════════════════════════════════════════ */
+    async function selectProject(id) {
+        selectedProjectId = id;
+        document.getElementById('selected-id-badge').textContent = `#${id}`;
+
+        // 테이블 선택 표시
+        document.querySelectorAll('#project-tbody tr').forEach(tr => tr.classList.remove('selected'));
+        const row = document.getElementById(`tr-${id}`);
+        if (row) row.classList.add('selected');
+
+        // 상세 조회
+        await loadProjectDetail();
+
+        // 해당 프로젝트 후원 목록도 자동 조회
+        await loadDonations();
+    }
+
+    async function loadProjectDetail() {
+        if (!selectedProjectId) return;
+        const { ok, data } = await api('GET', `/projects/${selectedProjectId}`);
+        if (!ok) return;
+        renderProjectDetail(data);
+    }
+
+    /* 프로젝트 상세 렌더링 */
+    function renderProjectDetail(p) {
+        const fields = Object.entries(p).map(([k, v]) => `
+    <div class="kv-row">
+      <span class="kv-key">${k}</span>
+      <span class="kv-val">${v === null ? '<span style="color:var(--text-secondary)">null</span>' :
+            (k === 'status' ? `<span class="status status-${v}">${v}</span>` : v)}</span>
+    </div>
+  `).join('');
+
+        document.getElementById('detail-content').innerHTML = `
+    <div class="detail-kv">${fields}</div>
+    <div class="transition-grid">
+      <h3>상태 전이</h3>
+      <div class="btn-group">
+        <button class="btn btn-outline btn-sm" onclick="transition('review-request')">review-request</button>
+        <button class="btn btn-success btn-sm" onclick="transition('approve')">approve</button>
+        <button class="btn btn-danger btn-sm" onclick="transition('reject')">reject</button>
+        <button class="btn btn-warning btn-sm" onclick="transition('stop')">stop</button>
+        <button class="btn btn-outline btn-sm" onclick="transition('resume')">resume</button>
+        <button class="btn btn-danger btn-sm" onclick="transition('delete-request')">delete-request</button>
+      </div>
+    </div>
+  `;
+    }
+
+    /* ═══════════════════════════════════════════
+       프로젝트 상태 전이
+       POST /projects/{id}/{action}
+       ═══════════════════════════════════════════ */
+    async function transition(action) {
+        if (!selectedProjectId) {
+            alert('프로젝트를 먼저 선택하세요.');
+            return;
+        }
+
+        const btns = document.querySelectorAll('.transition-grid .btn');
+        btns.forEach(b => b.disabled = true);
+
+        await api('POST', `/projects/${selectedProjectId}/${action}`);
+
+        btns.forEach(b => b.disabled = false);
+
+        // 상태 변경 후 목록 + 상세 자동 재조회
+        await Promise.all([loadProjects(), loadProjectDetail()]);
+    }
+
+    /* ═══════════════════════════════════════════
+       후원 생성
+       POST /donations?userId=&projectId=&amount=
+       ═══════════════════════════════════════════ */
+    async function createDonation() {
+        const userId = document.getElementById('donation-user-id').value.trim();
+        const amount = document.getElementById('donation-amount').value.trim();
+
+        if (!userId || !amount) {
+            alert('userId와 amount를 입력하세요.');
+            return;
+        }
+        if (!selectedProjectId) {
+            alert('프로젝트를 먼저 선택하세요.');
+            return;
+        }
+
+        const btn = event.currentTarget;
+        setLoading(btn, true);
+
+        const path = `/donations?userId=${encodeURIComponent(userId)}&projectId=${encodeURIComponent(selectedProjectId)}&amount=${encodeURIComponent(amount)}`;
+        const { ok, data } = await api('POST', path);
+
+        setLoading(btn, false);
+
+        if (ok && data && data.id != null) {
+            currentDonationId = data.id;
+            document.getElementById('current-donation-id').textContent = currentDonationId;
+            // 후원 목록 자동 재조회
+            await loadDonations();
+        }
+    }
+
+    /* ═══════════════════════════════════════════
+       후원 상태 전이
+       POST /donations/{id}/success|cancel|refund
+       ═══════════════════════════════════════════ */
+    async function updateDonation(action) {
+        if (!currentDonationId) {
+            alert('후원을 먼저 생성하세요.');
+            return;
+        }
+
+        const btn = event.currentTarget;
+        setLoading(btn, true);
+
+        await api('POST', `/donations/${currentDonationId}/${action}`);
+
+        setLoading(btn, false);
+
+        // 후원 목록 자동 재조회
+        await loadDonations();
+    }
+
+    /* ═══════════════════════════════════════════
+       프로젝트별 후원 목록 조회
+       GET /projects/{projectId}/donations
+       ═══════════════════════════════════════════ */
+    async function loadDonations() {
+        if (!selectedProjectId) return;
+
+        const btn = document.getElementById('refresh-donations-btn');
+        btn.classList.add('spinning');
+        btn.disabled = true;
+
+        const { ok, data } = await api('GET', `/projects/${selectedProjectId}/donations`);
+
+        btn.classList.remove('spinning');
+        btn.disabled = false;
+
+        if (!ok || !Array.isArray(data)) {
+            renderDonationTable([]);
+            return;
+        }
+
+        renderDonationTable(data);
+        document.getElementById('donation-count').textContent = data.length;
+    }
+
+    /* 후원 테이블 렌더링 */
+    function renderDonationTable(donations) {
+        const tbody = document.getElementById('donation-tbody');
+        if (!donations.length) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-secondary);padding:14px;font-size:12px;">후원 없음</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = donations.map(d => `
+    <tr>
+      <td class="mono">${d.id}</td>
+      <td class="mono">${d.userId ?? d.user_id ?? '—'}</td>
+      <td class="mono">${d.amount != null ? d.amount.toLocaleString() : '—'}</td>
+      <td><span class="status status-${d.status}">${d.status}</span></td>
+    </tr>
+  `).join('');
+    }
+
+    /* ═══════════════════════════════════════════
+       초기 로드
+       ═══════════════════════════════════════════ */
+    window.addEventListener('DOMContentLoaded', () => {
+        loadProjects();
+    });
+</script>
+
+</body>
+</html>

@@ -1,2 +1,2 @@
-﻿package com.funding.funding.global.config;
+package com.funding.funding.global.config;
 

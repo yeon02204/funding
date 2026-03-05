@@ -1,2 +1,2 @@
-﻿package com.funding.funding.domain.project.status;
+package com.funding.funding.domain.project.status;
 

@@ -1,2 +1,2 @@
-﻿package com.funding.funding.domain.user.service.follow;
+package com.funding.funding.domain.user.service.follow;
 

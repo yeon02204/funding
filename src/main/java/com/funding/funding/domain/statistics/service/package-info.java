@@ -1,2 +1,2 @@
-﻿package com.funding.funding.domain.statistics.service;
+package com.funding.funding.domain.statistics.service;
 

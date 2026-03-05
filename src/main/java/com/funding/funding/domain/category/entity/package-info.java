@@ -1,2 +1,2 @@
-﻿package com.funding.funding.domain.category.entity;
+package com.funding.funding.domain.category.entity;
 

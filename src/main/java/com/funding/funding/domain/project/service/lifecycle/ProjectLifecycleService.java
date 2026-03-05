@@ -3,15 +3,15 @@ package com.funding.funding.domain.project.service.lifecycle;
 import org.springframework.stereotype.Service;
 
 /**
- * [역할]
- * - 프로젝트 상태 전이 전용 서비스
+ * [??釉?
+ * - ?袁⑥쨮??븍뱜 ?怨밴묶 ?袁⑹뵠 ?袁⑹뒠 ??뺥돩??
  *
- * [책임]
- * - 상태 변경 검증
- * - 상태 변경 처리
- * - 상태 로그 저장
+ * [筌?굞??
+ * - ?怨밴묶 癰궰野?野꺜筌?
+ * - ?怨밴묶 癰궰野?筌ｌ꼶??
+ * - ?怨밴묶 嚥≪뮄??????
  *
- * 관리자, 배치, 일반 요청 모두 이 서비스를 통해 상태 변경
+ * ?온?귐딆쁽, 獄쏄퀣?? ??곗뺘 ?遺욧퍕 筌뤴뫀紐?????뺥돩??? ???퉸 ?怨밴묶 癰궰野?
  */
 @Service
 public class ProjectLifecycleService {

@@ -1,2 +1,2 @@
-﻿package com.funding.funding.domain.project.service.lifecycle;
+package com.funding.funding.domain.project.service.lifecycle;
 

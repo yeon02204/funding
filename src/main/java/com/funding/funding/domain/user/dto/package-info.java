@@ -1,2 +1,2 @@
-﻿package com.funding.funding.domain.user.dto;
+package com.funding.funding.domain.user.dto;
 

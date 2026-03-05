@@ -1,2 +1,2 @@
-﻿package com.funding.funding.domain.statistics.repository;
+package com.funding.funding.domain.statistics.repository;
 

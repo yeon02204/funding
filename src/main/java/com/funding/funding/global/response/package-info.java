@@ -1,2 +1,2 @@
-﻿package com.funding.funding.global.response;
+package com.funding.funding.global.response;
 

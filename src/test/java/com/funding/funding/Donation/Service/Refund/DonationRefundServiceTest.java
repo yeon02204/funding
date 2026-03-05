@@ -2,12 +2,15 @@ package com.funding.funding.Donation.Service.Refund;
 
 import com.funding.funding.domain.donation.entity.Donation;
 import com.funding.funding.domain.donation.repository.DonationRepository;
+import com.funding.funding.domain.donation.service.cancel.DonationCancelService;
 import com.funding.funding.domain.donation.service.refund.DonationRefundService;
 import com.funding.funding.domain.donation.status.DonationStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -23,6 +26,8 @@ class DonationRefundServiceTest {
     @Autowired
     private DonationRefundService refundService;
 
+    @Autowired
+    private DonationCancelService cancelService;
 
     /*
      * 정상 케이스 테스트
@@ -74,6 +79,50 @@ class DonationRefundServiceTest {
         donationRepository.save(donation);
 
         // when & then: 환불 재요청 시 예외 발생
+        assertThrows(IllegalStateException.class,
+                () -> refundService.refund(donation.getId()));
+    }
+
+    // FAILED에서 refund 시도 → 실패
+    @Test
+    void refund_fail_when_status_is_failed() {
+
+        Donation donation = new Donation();
+        donation.setStatus(DonationStatus.FAILED);
+
+        donationRepository.save(donation);
+
+        assertThrows(IllegalStateException.class,
+                () -> refundService.refund(donation.getId()));
+    }
+
+    // CANCEL 상태에서 refund 시도 → 실패
+    @Test
+    void refund_fail_when_status_is_cancel() {
+
+        Donation donation = new Donation();
+        donation.setStatus(DonationStatus.CANCEL);
+
+        donationRepository.save(donation);
+
+        assertThrows(IllegalStateException.class,
+                () -> refundService.refund(donation.getId()));
+    }
+
+    @Test
+    void refund_fail_after_cancel() {
+
+        // given
+        Donation donation = new Donation();
+        donation.setStatus(DonationStatus.SUCCESS);
+        donation.setCancelDeadline(LocalDateTime.now().plusHours(1));
+
+        donationRepository.save(donation);
+
+        // 먼저 취소
+        cancelService.cancel(donation.getId());
+
+        // when & then
         assertThrows(IllegalStateException.class,
                 () -> refundService.refund(donation.getId()));
     }

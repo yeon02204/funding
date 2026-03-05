@@ -1,2 +1,2 @@
-﻿package com.funding.funding.global.exception;
+package com.funding.funding.global.exception;
 

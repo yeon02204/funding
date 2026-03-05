@@ -1,2 +1,2 @@
-﻿package com.funding.funding.domain.project.service.query;
+package com.funding.funding.domain.project.service.query;
 

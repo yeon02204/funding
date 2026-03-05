@@ -1,2 +1,2 @@
-﻿package com.funding.funding.global.util;
+package com.funding.funding.global.util;
 

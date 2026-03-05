@@ -1,2 +1,2 @@
-﻿package com.funding.funding.domain.admin.service.donation;
+package com.funding.funding.domain.admin.service.donation;
 

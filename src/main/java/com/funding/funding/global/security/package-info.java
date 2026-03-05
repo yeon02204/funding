@@ -1,2 +1,2 @@
-﻿package com.funding.funding.global.security;
+package com.funding.funding.global.security;
 

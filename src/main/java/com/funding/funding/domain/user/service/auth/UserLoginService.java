@@ -3,13 +3,13 @@ package com.funding.funding.domain.user.service.auth;
 import org.springframework.stereotype.Service;
 
 /**
- * [역할]
- * - 로그인 처리 전용 서비스
+ * [??釉?
+ * - 嚥≪뮄???筌ｌ꼶???袁⑹뒠 ??뺥돩??
  *
- * [책임]
- * - 사용자 조회
- * - 비밀번호 검증
- * - 토큰 발급 또는 세션 처리
+ * [筌?굞??
+ * - ?????鈺곌퀬??
+ * - ??쑬?甕곕뜇??野꺜筌?
+ * - ?醫뤾쿃 獄쏆뮄???癒?뮉 ?紐꾨?筌ｌ꼶??
  */
 @Service
 public class UserLoginService {

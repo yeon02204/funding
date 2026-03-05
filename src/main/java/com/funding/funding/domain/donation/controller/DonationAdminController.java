@@ -21,11 +21,11 @@ import org.springframework.web.bind.annotation.RestController;
 // 관리자 전체 후원 목록 조회 컨트롤러
 public class DonationAdminController {
 
-    private final DonationQueryService donationQueryService; // 鈺곌퀬???袁⑹뒠 ??뺥돩??
+    private final DonationQueryService donationQueryService;
 
     @GetMapping // GET /admin/donations
     public Page<AdminDonationResponse> findAll(
-            @PageableDefault(size = 20) Pageable pageable // ??륁뵠筌왖 ?類ｋ궖 ?癒?짗 雅뚯눘??
+            @PageableDefault(size = 20) Pageable pageable
     ) {
         // 서비스에 페이지 정보 넘겨서 전체 후원 목록 조회
         return donationQueryService.findAllDonations(pageable);

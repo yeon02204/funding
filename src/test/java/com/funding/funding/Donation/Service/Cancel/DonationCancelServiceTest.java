@@ -83,18 +83,13 @@ class DonationCancelServiceTest {
         // when & then: 취소 시 예외 발생
         assertThrows(IllegalStateException.class,
                 () -> cancelService.cancel(donation.getId()));
+        // 상태가 여전히 SUCCESS인지 확인
+        Donation result = donationRepository.findById(donation.getId()).get();
+        assertEquals(DonationStatus.SUCCESS, result.getStatus());
     }
 
 
-    /*
-     * 실패 케이스
-     *
-     * 조건:
-     * - 이미 CANCEL 상태
-     *
-     * 기대 결과:
-     * - IllegalStateException 발생
-     */
+    // CANCEL 이후 다시 cancel 시도 → 실패
     @Test
     void cancel_fail_when_already_cancelled() {
 
@@ -109,4 +104,23 @@ class DonationCancelServiceTest {
         assertThrows(IllegalStateException.class,
                 () -> cancelService.cancel(donation.getId()));
     }
+
+    // FAILED에서 cancel 시도 → 실패해야 함
+    @Test
+    void cancel_fail_when_status_is_failed() {
+
+        Donation donation = new Donation();
+        donation.setStatus(DonationStatus.FAILED);
+        donation.setCancelDeadline(LocalDateTime.now().plusHours(1));
+
+        donationRepository.save(donation);
+
+        assertThrows(IllegalStateException.class,
+                () -> cancelService.cancel(donation.getId()));
+    }
+
+
+
+
+
 }
