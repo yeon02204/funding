@@ -15,7 +15,7 @@ import jakarta.persistence.Entity;
  * DB 테이블과 직접 매핑된다.
  */
 
-@Entity
+
 public class User {
 
 }
