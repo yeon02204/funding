@@ -7,10 +7,13 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
-public interface DonationRepository extends JpaRepository<Donation, Long>{
+public interface DonationRepository extends JpaRepository<Donation, Long> {
 
     // 프로젝트 ID 기준으로 후원 목록을 생성일 내림차순 조회
+    // @ManyToOne 방식: project.id 로 탐색
     List<Donation> findByProjectIdOrderByCreatedAtDesc(Long projectId);
+
     // 사용자 ID 기준으로 후원 목록을 생성일 내림차순 조회
+    // @ManyToOne 방식: user.id 로 탐색
     List<Donation> findByUserIdOrderByCreatedAtDesc(Long userId);
 }

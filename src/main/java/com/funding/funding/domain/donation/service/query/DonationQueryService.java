@@ -2,13 +2,13 @@ package com.funding.funding.domain.donation.service.query;
 
 import com.funding.funding.domain.donation.dto.ProjectDonationResponse;
 import com.funding.funding.domain.donation.dto.UserDonationResponse;
+import com.funding.funding.domain.donation.dto.AdminDonationResponse;
 import com.funding.funding.domain.donation.repository.DonationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import com.funding.funding.domain.donation.dto.AdminDonationResponse;
 
 import java.util.List;
 
@@ -18,6 +18,11 @@ import java.util.List;
  * - 상태 변경 로직은 포함하지 않는다.
  * - readOnly 트랜잭션 사용 (조회 전용).
  * - 권한 검증은 Controller 또는 상위 계층에서 처리한다.
+ *
+ * [병합 수정 내역]
+ * Donation 엔티티가 @ManyToOne 방식으로 변경됨에 따라
+ * d.getUserId() → d.getUser().getId()
+ * d.getProjectId() → d.getProject().getId() 로 수정
  */
 @Service
 @RequiredArgsConstructor
@@ -35,8 +40,6 @@ public class DonationQueryService {
      * - 프로젝트 작성자에게 필요한 정보만 노출한다
      *   (금액, 생성일, 상태).
      */
-
-    // 프로젝트 후원 목록을 최신순으로 조회하여 DTO로 반환
     public List<ProjectDonationResponse> findProjectDonations(Long projectId) {
 
         return donationRepository
@@ -50,6 +53,7 @@ public class DonationQueryService {
                 ))
                 .toList();
     }
+
     // 사용자 후원 목록을 최신순으로 조회하여 DTO로 반환
     public List<UserDonationResponse> findUserDonations(Long userId) {
 
@@ -57,8 +61,9 @@ public class DonationQueryService {
                 .findByUserIdOrderByCreatedAtDesc(userId)
                 .stream()
                 // 엔티티 → DTO 변환
+                // d.getProjectId() → d.getProject().getId() (@ManyToOne 방식으로 변경됨)
                 .map(d -> new UserDonationResponse(
-                        d.getProjectId(),
+                        d.getProject().getId(),
                         d.getAmount(),
                         d.getStatus(),
                         d.getCreatedAt()
@@ -71,16 +76,16 @@ public class DonationQueryService {
 
         return donationRepository.findAll(pageable)
                 // 엔티티 → DTO 변환
+                // d.getUserId() → d.getUser().getId()
+                // d.getProjectId() → d.getProject().getId()
                 .map(d -> new AdminDonationResponse(
                         d.getId(),
-                        d.getUserId(),
-                        d.getProjectId(),
+                        d.getUser().getId(),
+                        d.getProject().getId(),
                         d.getAmount(),
                         d.getStatus(),
                         d.getCreatedAt(),
                         d.getRefundedAt()
                 ));
     }
-
-
 }

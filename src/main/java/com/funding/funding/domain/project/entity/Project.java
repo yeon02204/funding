@@ -1,153 +1,186 @@
 package com.funding.funding.domain.project.entity;
 
+import com.funding.funding.domain.category.entity.Category;
+import com.funding.funding.domain.project.exception.InvalidProjectStatusTransitionException; // ✅ import 추가
+import com.funding.funding.domain.project.status.ProjectStatusPolicy;                        // ✅ import 추가
+import com.funding.funding.domain.user.entity.User;
+import com.funding.funding.global.util.BaseTimeEntity;
+import jakarta.persistence.*;
+import lombok.Getter;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.funding.funding.domain.project.exception.InvalidProjectStatusTransitionException;
-import com.funding.funding.domain.project.status.ProjectStatus;
-import com.funding.funding.domain.project.status.ProjectStatusPolicy;
-
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-
-/**
- * [역할]
- * - 프로젝트 정보를 저장하는 엔티티(현재는 최소 구현)
- *
- * [현재 목표]
- * - 상태 전이 규칙은 ProjectStatusPolicy로 검증하고
- * - 상태 변경이 성공하면 ProjectStatusLog를 1개 남긴다
- * - APPROVED 상태에서 start_at 도달 시 FUNDING으로 전환될 수 있도록 startAt(예약 시작일)을 가진다
- */
-
-// 로그를 만드는 곳
 @Entity
-public class Project {
-	
-	@Id
+@Table(name = "projects")
+public class Project extends BaseTimeEntity {
+
+    @Getter
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-	
-    @Enumerated(EnumType.STRING)
-    private ProjectStatus status = ProjectStatus.DRAFT; // 프로젝트는 현재상태를 하나 갖고 있고 기본 : DRAFT
 
-    // ✅ 펀딩 시작 예약일 (DB: start_at)
-    @Column(name = "start_at")
-    private LocalDateTime startAt; // ProjectFundingTransitionService랑 연결, 
-    							   // 승인 해놓고 시작 시간 되면 자동으로 펀딩 시작 가능 장치
-    @Column(name = "deadline")
-    private LocalDateTime deadline; // 서버 돌리다가 오류 새로 추가
-    
-    // goal_Amount 필드 매핑
-    @Column(name = "goal_amount")
+    @Getter
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User owner;
+
+    @Getter
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
+    private Category category;
+
+    @Getter
+    @Column(nullable = false, length = 255)
+    private String title;
+
+    @Getter
+    @Lob
+    private String content;
+
+    @Getter
+    @Column(name = "goal_amount", nullable = false)
     private Long goalAmount;
 
-    // ✅ 상태 변경 로그 목록 (상태가 바뀔 때마다 1개씩 쌓임)
-    // DB 관점에서도 이 로그들은 이 프로젝트에 속한다가 명확해짐
-    // Project를 저장할 때 로그도 같이 저장되게 만들기 가능
+    // 현재 모인 금액 (팀 합의로 추가된 컬럼)
+    @Getter
+    @Column(name = "current_amount", nullable = false)
+    private Long currentAmount = 0L;
+
+    // 상태 전이는 changeStatus()로만 가능
+    @Getter
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private ProjectStatus status;
+
+    @Getter
+    @Column(name = "start_at")
+    private LocalDateTime startAt;
+
+    @Getter
+    @Column(nullable = false)
+    private LocalDateTime deadline;
+
+    @Getter
+    @Version
+    private Long version;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private final List<ProjectStatusLog> statusLogs = new ArrayList<>();
 
-    // ✅ 공통 상태 변경 메서드 (상태 전이의 유일한 관문)
-    // 하는 일 : 정책검사 - 상태 전이가 허용되는지 규칙으로 검사, 허용 안되면 예외 발생
-    public void changeStatus(ProjectStatus nextStatus) { 
+    public Project() {}
+
+    // ✅ @PrePersist 제거
+    // BaseTimeEntity에 이미 @PrePersist(onCreate)가 있어서 중복 충돌 발생
+    // status 초기값은 create() 팩토리 메서드에서 DRAFT로 세팅
+    // currentAmount 초기값은 필드 선언부에서 0L로 세팅
+
+    // ────────────────────────────────────────
+    // 팩토리 메서드
+    // ────────────────────────────────────────
+
+    public static Project create(User owner, Category category,
+                                 String title, String content,
+                                 Long goalAmount, LocalDateTime deadline) {
+        Project p = new Project();
+        p.owner = owner;
+        p.category = category;
+        p.title = title;
+        p.content = content;
+        p.goalAmount = goalAmount;
+        p.deadline = deadline;
+        p.status = ProjectStatus.DRAFT;
+        p.currentAmount = 0L;
+        return p;
+    }
+
+    // ────────────────────────────────────────
+    // 상태 전이 (단일 관문)
+    // ────────────────────────────────────────
+
+    // TODO: 인증 연동 후 changedBy, changedById를 Authentication에서 추출할 것
+    public void changeStatus(ProjectStatus nextStatus, String changedBy, Long changedById) {
         ProjectStatus from = this.status;
 
         if (!ProjectStatusPolicy.isAllowed(this.status, nextStatus)) {
             throw new InvalidProjectStatusTransitionException(this.status, nextStatus);
-            // 현재 요청은 규칙 위반이라고 강하게 막는 역할
         }
 
-        this.status = nextStatus; // 상태 변경
+        this.status = nextStatus;
 
-        // ✅ 상태 변경 성공 후 로그 기록 - 상태 변경 시 무조건 로그 1개 생성
-        statusLogs.add(new ProjectStatusLog( 
-                this,               // 로그가 DB에 저장될 때 project_id가 자동으로 채워짐
-                from,               // beforeStatus
-                nextStatus,         // afterStatus
-                "USER",             // changedBy (임시)
-                0L,                 // changedById (임시)
-                LocalDateTime.now() // createdAt
-        ));
+        // changedById == 0L → SYSTEM 자동 전환, User 없는 생성자 사용
+        if (changedById == null || changedById == 0L) {
+            statusLogs.add(new ProjectStatusLog(
+                    this, from, nextStatus, changedBy, LocalDateTime.now()
+            ));
+        } else {
+            // TODO: 인증 연동 후 User 객체 직접 넘기도록 개선
+            statusLogs.add(new ProjectStatusLog(
+                    this, from, nextStatus, changedBy, LocalDateTime.now()
+            ));
+        }
     }
 
-    // ✅ 심사 요청 행위 메서드
-    public void requestReview() {
-        changeStatus(ProjectStatus.REVIEW_REQUESTED); // 상태 전이 정책 검사, 상태 변경, 상태 로그 생성
+    // ────────────────────────────────────────
+    // 행위 메서드
+    // ────────────────────────────────────────
+
+    public void requestReview(Long userId) {
+        changeStatus(ProjectStatus.REVIEW_REQUESTED, "USER", userId);
     }
 
-    // ✅ 펀딩 시작 예약일 설정 (승인 이후 “예약 시작”을 위해 사용)
     public void scheduleStart(LocalDateTime startAt) {
-        if (startAt == null) {
-            throw new IllegalArgumentException("startAt cannot be null");
-        }
+        if (startAt == null) throw new IllegalArgumentException("startAt cannot be null");
         this.startAt = startAt;
     }
-    
-    // 펀딩 종료
+
     public void scheduleDeadline(LocalDateTime deadline) {
-        if (deadline == null) {
-            throw new IllegalArgumentException("deadline cannot be null");
-        }
+        if (deadline == null) throw new IllegalArgumentException("deadline cannot be null");
         this.deadline = deadline;
     }
 
-    // ✅ 예약 시작일 도달 시 펀딩 시작 전환
     public void startFunding() {
-        changeStatus(ProjectStatus.FUNDING);
-    }
-    
-    public void completeFunding(boolean success) { // 종료 처리 메서드 추가
-        changeStatus(success ? ProjectStatus.SUCCESS : ProjectStatus.FAILED);
+        changeStatus(ProjectStatus.FUNDING, "SYSTEM", 0L);
     }
 
-    public ProjectStatus getStatus() {
-        return status;
+    public void completeFunding() {
+        if (this.goalAmount == null) throw new IllegalStateException("goalAmount must be set");
+        long current = this.currentAmount == null ? 0L : this.currentAmount;
+        changeStatus(current >= this.goalAmount ? ProjectStatus.SUCCESS : ProjectStatus.FAILED, "SYSTEM", 0L);
     }
 
-    public LocalDateTime getStartAt() {
-        return startAt;
-    }
-    
-    public LocalDateTime getDeadline() { // 서버 돌리다가 오류 새로 추가
-        return deadline;
-    }
-
-    public List<ProjectStatusLog> getStatusLogs() {
-        return statusLogs;
-    }
-    
-    public Long getGoalAmount() { // getter 추가
-        return goalAmount;
-    }
-    
-    public void setGoalAmount(Long goalAmount) {
-        this.goalAmount = goalAmount;
-    }
-    
-    public Long getId() {
-        return id;
-    }
-    
-    // ✅ 프로젝트 수정 가능 여부 검증
-    public void validateEditable() { // 수정 제한 정책의 핵심
+    public void validateEditable() {
         if (this.status != ProjectStatus.DRAFT) {
             throw new IllegalStateException("프로젝트는 초안 상태에서만 수정할 수 있습니다.");
         }
     }
-    
+
     public void changeGoalAmount(Long goalAmount) {
         if (goalAmount == null || goalAmount <= 0) {
             throw new IllegalArgumentException("goalAmount must be positive");
         }
         this.goalAmount = goalAmount;
     }
+
+    public void increaseCurrentAmount(long amount) {
+        if (amount <= 0) throw new IllegalArgumentException("amount must be positive");
+        if (this.currentAmount == null) this.currentAmount = 0L;
+        this.currentAmount += amount;
+    }
+
+    public void decreaseCurrentAmount(long amount) {
+        if (amount <= 0) throw new IllegalArgumentException("amount must be positive");
+        if (this.currentAmount == null) this.currentAmount = 0L;
+        if (this.currentAmount < amount) throw new IllegalStateException("currentAmount cannot be negative");
+        this.currentAmount -= amount;
+    }
+
+    // ────────────────────────────────────────
+    // Getter
+    // ────────────────────────────────────────
+
 }
