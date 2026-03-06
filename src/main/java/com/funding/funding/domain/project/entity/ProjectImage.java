@@ -1,0 +1,23 @@
+package com.funding.funding.domain.project.entity;
+
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "project_images")
+public class ProjectImage {
+
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id", nullable = false)
+    private Project project;
+
+    @Column(name = "image_url", nullable = false, length = 500)
+    private String imageUrl;
+
+    @Column(name = "is_thumbnail", nullable = false)
+    private boolean thumbnail;
+
+    public ProjectImage() {}
+}

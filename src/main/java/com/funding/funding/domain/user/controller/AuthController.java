@@ -1,21 +1,29 @@
 package com.funding.funding.domain.user.controller;
 
-import org.springframework.web.bind.annotation.RestController;
+import com.funding.funding.domain.user.dto.AuthDtos;
+import com.funding.funding.domain.user.service.auth.AuthService;
+import com.funding.funding.global.response.ApiResponse;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.*;
 
-/**
- * [역할]
- * - 회원 인증 관련 HTTP 요청을 받는 컨트롤러
- *
- * [담당 기능]
- * - 회원가입
- * - 로그인
- * - 소셜 로그인
- * - 로그아웃
- *
- * 실제 비즈니스 로직은 Service에 위임한다.
- */
-
-@RestController	
+@RestController
+@RequestMapping("/api/auth")
 public class AuthController {
 
+    private final AuthService authService;
+
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
+
+    @PostMapping("/register")
+    public ApiResponse<Void> register(@Valid @RequestBody AuthDtos.RegisterReq req) {
+        authService.register(req);
+        return ApiResponse.ok("회원가입 완료", null);
+    }
+
+    @PostMapping("/login")
+    public ApiResponse<AuthDtos.TokenRes> login(@Valid @RequestBody AuthDtos.LoginReq req) {
+        return ApiResponse.ok(authService.login(req));
+    }
 }

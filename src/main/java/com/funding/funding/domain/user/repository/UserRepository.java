@@ -1,8 +1,13 @@
 package com.funding.funding.domain.user.repository;
 
-import org.springframework.stereotype.Repository;
+import com.funding.funding.domain.user.entity.User;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-@Repository
-public interface UserRepository {
-
+public interface UserRepository extends JpaRepository<User, Long> {
+    Optional<User> findByEmail(String email);
+    boolean existsByEmail(String email);
+    boolean existsByNickname(String nickname);
 }
+
+
