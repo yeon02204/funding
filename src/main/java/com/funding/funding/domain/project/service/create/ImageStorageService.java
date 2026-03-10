@@ -1,21 +1,23 @@
 package com.funding.funding.domain.project.service.create;
 
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
 /*
-  imageStorageService가 하는 일
-  파일 검증(20MB 제한)
-  파일 이름(UUID 생성)
-  로컬 폴더에 저장
-  /uploads/projects/파일이름.png를 반환 -> DB에 저장
- */
+imageStorageService가 하는 일
+파일 검증(20MB 제한)
+파일 이름(UUID 생성)
+로컬 폴더에 저장
+/uploads/projects/파일이름.png를 반환 -> DB에 저장
+*/
 
 @Service
 public class ImageStorageService {
@@ -24,11 +26,9 @@ public class ImageStorageService {
     private static final String UPLOAD_DIR = "uploads/projects/";
 
     public String save(MultipartFile file) {
-
         validate(file);
 
         try {
-
             Path uploadPath = Paths.get(UPLOAD_DIR);
 
             if (Files.notExists(uploadPath)) {
@@ -36,21 +36,23 @@ public class ImageStorageService {
             }
 
             String originalName = file.getOriginalFilename();
-            String savedName = UUID.randomUUID() + "_" + originalName;
+            String extension = extractExtension(originalName);
+            String savedName = UUID.randomUUID() + extension;
 
             Path target = uploadPath.resolve(savedName);
 
-            file.transferTo(target.toFile());
+            try (InputStream inputStream = file.getInputStream()) {
+                Files.copy(inputStream, target, StandardCopyOption.REPLACE_EXISTING);
+            }
 
             return "/uploads/projects/" + savedName;
 
         } catch (IOException e) {
-            throw new RuntimeException("이미지 저장 실패");
+            throw new RuntimeException("이미지 저장 실패", e);
         }
     }
 
     private void validate(MultipartFile file) {
-
         if (file == null || file.isEmpty()) {
             throw new RuntimeException("빈 파일입니다.");
         }
@@ -60,9 +62,21 @@ public class ImageStorageService {
         }
 
         String contentType = file.getContentType();
-
         if (contentType == null || !contentType.startsWith("image/")) {
             throw new RuntimeException("이미지 파일만 업로드 가능합니다.");
         }
+    }
+
+    private String extractExtension(String originalName) {
+        if (originalName == null || originalName.isBlank()) {
+            return "";
+        }
+
+        int lastDotIndex = originalName.lastIndexOf(".");
+        if (lastDotIndex == -1) {
+            return "";
+        }
+
+        return originalName.substring(lastDotIndex);
     }
 }
