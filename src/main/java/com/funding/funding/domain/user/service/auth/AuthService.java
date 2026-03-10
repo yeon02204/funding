@@ -2,7 +2,9 @@ package com.funding.funding.domain.user.service.auth;
 
 import com.funding.funding.domain.user.dto.AuthDtos;
 import com.funding.funding.domain.user.entity.*;
-import com.funding.funding.domain.user.repository.*;
+import com.funding.funding.domain.user.repository.EmailVerificationTokenRepository;
+import com.funding.funding.domain.user.repository.PasswordResetTokenRepository;
+import com.funding.funding.domain.user.repository.UserRepository;
 import com.funding.funding.domain.user.service.email.EmailService;
 import com.funding.funding.global.exception.ApiException;
 import com.funding.funding.global.security.JwtTokenProvider;
@@ -19,12 +21,12 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class AuthService {
 
-    private final UserRepository                  userRepository;
+    private final UserRepository userRepository;
     private final EmailVerificationTokenRepository emailTokenRepository;
-    private final PasswordResetTokenRepository    passwordResetTokenRepository;
-    private final PasswordEncoder                 passwordEncoder;
-    private final JwtTokenProvider                jwt;
-    private final EmailService                    emailService;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwt;
+    private final EmailService emailService;
 
     @Value("${app.frontend-url:http://localhost:3000}")
     private String frontendUrl;
@@ -35,15 +37,14 @@ public class AuthService {
                        PasswordEncoder passwordEncoder,
                        JwtTokenProvider jwt,
                        EmailService emailService) {
-        this.userRepository           = userRepository;
-        this.emailTokenRepository     = emailTokenRepository;
+        this.userRepository = userRepository;
+        this.emailTokenRepository = emailTokenRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
-        this.passwordEncoder          = passwordEncoder;
-        this.jwt                      = jwt;
-        this.emailService             = emailService;
+        this.passwordEncoder = passwordEncoder;
+        this.jwt = jwt;
+        this.emailService = emailService;
     }
 
-    // ── 회원가입 ──────────────────────────────────────
     @Transactional
     public void register(AuthDtos.RegisterReq req) {
         if (userRepository.existsByEmail(req.email())) {
@@ -60,11 +61,9 @@ public class AuthService {
         );
         userRepository.save(user);
 
-        // 회원가입 완료 → 인증 코드 자동 발송
         sendVerificationCode(req.email());
     }
 
-    // ── 로그인 ────────────────────────────────────────
     public AuthDtos.TokenRes login(AuthDtos.LoginReq req) {
         User user = userRepository.findByEmail(req.email())
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다."));
@@ -76,26 +75,78 @@ public class AuthService {
             throw new ApiException(HttpStatus.FORBIDDEN, "활성 상태의 계정이 아닙니다.");
         }
 
+        user.updateLastLoginAt();
+
         String access = jwt.createAccessToken(user.getId(), user.getRole().name());
         return new AuthDtos.TokenRes(access);
     }
 
-    // ── 이메일 인증: 코드 발송 ────────────────────────
+    @Transactional
+    public AuthDtos.TokenRes socialLogin(
+            AuthProvider provider,
+            String providerId,
+            String email,
+            String nickname,
+            String profileImage
+    ) {
+        if (email == null || email.isBlank()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "소셜 계정에서 이메일 정보를 제공하지 않았습니다.");
+        }
+
+        User user = userRepository.findByProviderAndProviderId(provider, providerId)
+                .orElseGet(() -> createSocialUser(provider, providerId, email, nickname, profileImage));
+
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "활성 상태의 계정이 아닙니다.");
+        }
+
+        user.updateSocialInfo(nickname, profileImage, providerId);
+
+        String access = jwt.createAccessToken(user.getId(), user.getRole().name());
+        return new AuthDtos.TokenRes(access);
+    }
+
+    @Transactional
+    protected User createSocialUser(
+            AuthProvider provider,
+            String providerId,
+            String email,
+            String nickname,
+            String profileImage
+    ) {
+        if (userRepository.existsByEmail(email)) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "이미 일반회원 또는 다른 소셜 계정으로 가입된 이메일입니다. 기존 방식으로 로그인해주세요."
+            );
+        }
+
+        String finalNickname = makeUniqueNickname(nickname, provider);
+
+        User newUser = User.createSocialUser(
+                email,
+                finalNickname,
+                provider,
+                providerId,
+                profileImage
+        );
+
+        return userRepository.save(newUser);
+    }
+
     @Transactional
     public void sendVerificationCode(String email) {
-        // 가입된 이메일인지 확인
         if (!userRepository.existsByEmail(email)) {
             throw new ApiException(HttpStatus.NOT_FOUND, "가입되지 않은 이메일입니다.");
         }
 
         String code = generateSixDigitCode();
-        EmailVerificationToken token = EmailVerificationToken.create(email, code, 5); // 5분 유효
+        EmailVerificationToken token = EmailVerificationToken.create(email, code, 5);
         emailTokenRepository.save(token);
 
-        emailService.sendVerificationCode(email, code); // 비동기 발송
+        emailService.sendVerificationCode(email, code);
     }
 
-    // ── 이메일 인증: 코드 확인 ────────────────────────
     @Transactional
     public void verifyEmail(AuthDtos.VerifyEmailReq req) {
         EmailVerificationToken token = emailTokenRepository
@@ -113,38 +164,31 @@ public class AuthService {
         }
 
         token.markUsed();
-
-        // User.emailVerified = true 처리
         userRepository.findByEmail(req.email()).ifPresent(User::verifyEmail);
     }
 
-    // ── 아이디 찾기 ───────────────────────────────────
     public AuthDtos.FindEmailRes findEmail(AuthDtos.FindEmailReq req) {
         User user = userRepository.findByNickname(req.nickname())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "해당 닉네임의 회원을 찾을 수 없습니다."));
 
         String masked = maskEmail(user.getEmail());
-
-        // 마스킹된 이메일을 해당 이메일로도 발송 (선택적으로 제거 가능)
         emailService.sendFoundEmail(user.getEmail(), masked);
 
         return new AuthDtos.FindEmailRes(masked);
     }
 
-    // ── 비밀번호 찾기: 재설정 링크 발송 ──────────────
     @Transactional
     public void requestPasswordReset(AuthDtos.PasswordResetRequestReq req) {
         User user = userRepository.findByEmail(req.email())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "가입되지 않은 이메일입니다."));
 
         String token = UUID.randomUUID().toString();
-        PasswordResetToken resetToken = PasswordResetToken.create(user, token, 30); // 30분 유효
+        PasswordResetToken resetToken = PasswordResetToken.create(user, token, 30);
         passwordResetTokenRepository.save(resetToken);
 
         emailService.sendPasswordResetLink(user.getEmail(), token, frontendUrl);
     }
 
-    // ── 비밀번호 재설정 실행 ──────────────────────────
     @Transactional
     public void resetPassword(AuthDtos.PasswordResetReq req) {
         PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(req.token())
@@ -161,21 +205,33 @@ public class AuthService {
         resetToken.getUser().changePassword(passwordEncoder.encode(req.newPassword()));
     }
 
-    // ── 유틸 ──────────────────────────────────────────
     private String generateSixDigitCode() {
         return String.format("%06d", new Random().nextInt(1_000_000));
     }
 
-    /**
-     * 이메일 마스킹: test@example.com → te**@example.com
-     */
     private String maskEmail(String email) {
         int atIndex = email.indexOf('@');
-        if (atIndex <= 2) return email; // 앞부분이 너무 짧으면 그대로
+        if (atIndex <= 2) return email;
 
-        String local  = email.substring(0, atIndex);
+        String local = email.substring(0, atIndex);
         String domain = email.substring(atIndex);
         String masked = local.substring(0, 2) + "*".repeat(local.length() - 2);
         return masked + domain;
+    }
+
+    private String makeUniqueNickname(String nickname, AuthProvider provider) {
+        String base = (nickname == null || nickname.isBlank())
+                ? provider.name().toLowerCase() + "_user"
+                : nickname.trim();
+
+        String candidate = base;
+        int suffix = 1;
+
+        while (userRepository.existsByNickname(candidate)) {
+            candidate = base + suffix;
+            suffix++;
+        }
+
+        return candidate;
     }
 }
