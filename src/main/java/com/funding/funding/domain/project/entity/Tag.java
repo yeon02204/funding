@@ -1,11 +1,14 @@
 package com.funding.funding.domain.project.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
 
+@Getter
 @Entity
 @Table(name = "tags")
 public class Tag {
 
+    // ✅ getter 추가 — TagService에서 tag.getId() 호출에 필요
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -16,4 +19,5 @@ public class Tag {
     private String normalizedName;
 
     public Tag() {}
+
 }
