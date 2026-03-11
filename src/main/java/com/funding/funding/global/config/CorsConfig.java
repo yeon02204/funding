@@ -15,17 +15,13 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // ─────────────────────────────────────────────
-        // 프론트 React 서버 주소 허용
-        // 개발 환경 기준: localhost:3000
-        //
-        // 운영으로 가면:
-        // https://your-frontend-domain.com
-        // 이런 식으로 바꿔야 함
-        // ─────────────────────────────────────────────
-        config.setAllowedOrigins(List.of("http://localhost:3000"));
+        config.setAllowedOrigins(List.of(
+                "http://127.0.0.1:3000",
+                "http://localhost:3000",
+                "http://127.0.0.1:5173",
+                "http://localhost:5173"
+        ));
 
-        // 허용할 HTTP 메서드
         config.setAllowedMethods(List.of(
                 "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
         ));

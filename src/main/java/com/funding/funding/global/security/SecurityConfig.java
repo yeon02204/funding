@@ -97,6 +97,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/categories", "/api/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/{userId}/followers/count").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/{userId}/following/count").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
 
                         // 나머지는 인증 필요
                         .anyRequest().authenticated()

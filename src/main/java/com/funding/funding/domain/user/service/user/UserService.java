@@ -55,6 +55,7 @@ public class UserService {
     }
 
     // ── 내 프로젝트 목록 ──────────────────────────────
+    @Transactional
     public List<Project> getMyProjects(Long userId) {
         return projectRepository.findByOwnerIdOrderByCreatedAtDesc(userId);
     }

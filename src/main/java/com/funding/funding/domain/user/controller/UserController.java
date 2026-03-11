@@ -1,5 +1,7 @@
 package com.funding.funding.domain.user.controller;
 
+import com.funding.funding.domain.project.repository.ProjectImageRepository;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.funding.funding.domain.project.dto.ProjectSummaryResponse;
 import com.funding.funding.domain.user.dto.UserMeRes;
 import com.funding.funding.domain.user.dto.UserProfileResponse;
@@ -9,6 +11,7 @@ import com.funding.funding.global.exception.ApiException;
 import com.funding.funding.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.Getter;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -21,9 +24,13 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    @Getter
+    private final ProjectImageRepository projectImageRepository;
 
-    public UserController(UserService userService) {
+
+    public UserController(UserService userService, ProjectImageRepository projectImageRepository) {
         this.userService = userService;
+        this.projectImageRepository = projectImageRepository;
     }
 
     // GET /api/users/me — 내 정보 조회
@@ -48,10 +55,18 @@ public class UserController {
     @GetMapping("/me/projects")
     public ApiResponse<List<ProjectSummaryResponse>> myProjects(Authentication auth) {
         Long userId = extractUserId(auth);
+        // ProjectImageRepository 주입 추가 후
 
         List<ProjectSummaryResponse> result = userService.getMyProjects(userId)
                 .stream()
-                .map(ProjectSummaryResponse::from)
+                .map(p -> {
+                    ProjectSummaryResponse r = ProjectSummaryResponse.from(p, 0L);
+                    projectImageRepository
+                            .findByProjectIdAndThumbnailTrue(p.getId())
+                            .ifPresent(img -> r.thumbnailUrl = img.getImageUrl());
+                    r.ownerNickname = p.getOwner() != null ? p.getOwner().getNickname() : null;
+                    return r;
+                })
                 .toList();
 
         return ApiResponse.ok(result);
