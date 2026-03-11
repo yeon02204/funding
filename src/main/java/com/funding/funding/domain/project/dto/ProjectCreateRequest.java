@@ -16,9 +16,10 @@ public class ProjectCreateRequest { // 사용자가 보낸 JSON 데이터를 스
     // 펀딩 종료 시간
     private LocalDateTime deadline; // 새로 추가
     private Integer thumbnailIndex; // 대표 이미지 번호 (0,1,2번 중 하나)
-    
+
     private Long categoryId; // 추가
     private String title; // 추가
     private String content; // 추가
-    private Long ownerId; // 추가
+    // ✅ ownerId 제거 — JWT에서 추출한 userId 사용
+    //    클라이언트가 ownerId를 조작해서 다른 사람 명의로 프로젝트 만드는 것을 방지
 }
