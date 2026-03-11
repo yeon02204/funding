@@ -21,11 +21,14 @@ public class ProjectQueryService {
 
     private final ProjectRepository projectRepository; // DB 조회를 위한 Repository
     private final LikeRepository likeRepository;       // ✅ 추가 — 좋아요 수 조회용
+    private final ProjectViewService projectViewService;
 
     public ProjectQueryService(ProjectRepository projectRepository,
-                               LikeRepository likeRepository) { // 생성자 주입
+                               LikeRepository likeRepository,
+                               ProjectViewService projectViewService) { // 생성자 주입
         this.projectRepository = projectRepository;
         this.likeRepository    = likeRepository;
+        this.projectViewService = projectViewService;
     }
 
     // 단건 프로젝트 조회
@@ -43,6 +46,20 @@ public class ProjectQueryService {
         if (project.getStatus() == ProjectStatus.DELETED) {
             throw new ApiException(HttpStatus.NOT_FOUND, "삭제된 프로젝트입니다. id=" + id);
         }
+
+        return project;
+    }
+    
+    @Transactional // 조회수 메서드 추가
+    public Project getOneWithViewCount(Long id) {
+        Project project = projectRepository.findDetailById(id)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "프로젝트를 찾을 수 없습니다. id=" + id));
+
+        if (project.getStatus() == ProjectStatus.DELETED) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "삭제된 프로젝트입니다. id=" + id);
+        }
+
+        projectViewService.increaseView(project);
 
         return project;
     }

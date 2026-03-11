@@ -3,11 +3,13 @@ package com.funding.funding.domain.user.controller;
 import com.funding.funding.domain.project.repository.ProjectImageRepository;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import com.funding.funding.domain.project.dto.ProjectSummaryResponse;
+import com.funding.funding.domain.user.dto.UserMeRes;
 import com.funding.funding.domain.user.dto.UserProfileResponse;
 import com.funding.funding.domain.user.dto.UserProfileUpdateRequest;
 import com.funding.funding.domain.user.service.user.UserService;
 import com.funding.funding.global.exception.ApiException;
 import com.funding.funding.global.response.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
@@ -32,10 +34,11 @@ public class UserController {
     }
 
     // GET /api/users/me — 내 정보 조회
+    // accessToken 기준으로 현재 로그인한 사용자 정보를 반환
     @GetMapping("/me")
-    public ApiResponse<UserProfileResponse> me(Authentication auth) {
+    public ApiResponse<UserMeRes> me(Authentication auth) {
         Long userId = extractUserId(auth);
-        return ApiResponse.ok(UserProfileResponse.from(userService.getMe(userId)));
+        return ApiResponse.ok(userService.getMe(userId));
     }
 
     // PUT /api/users/me — 프로필 수정 (닉네임, 프로필 이미지)
@@ -53,6 +56,7 @@ public class UserController {
     public ApiResponse<List<ProjectSummaryResponse>> myProjects(Authentication auth) {
         Long userId = extractUserId(auth);
         // ProjectImageRepository 주입 추가 후
+
         List<ProjectSummaryResponse> result = userService.getMyProjects(userId)
                 .stream()
                 .map(p -> {
@@ -64,6 +68,7 @@ public class UserController {
                     return r;
                 })
                 .toList();
+
         return ApiResponse.ok(result);
     }
 
@@ -71,21 +76,33 @@ public class UserController {
     @GetMapping("/me/likes")
     public ApiResponse<List<ProjectSummaryResponse>> myLikes(Authentication auth) {
         Long userId = extractUserId(auth);
+
         List<ProjectSummaryResponse> result = userService.getLikedProjects(userId)
                 .stream()
                 .map(ProjectSummaryResponse::from)
                 .toList();
+
         return ApiResponse.ok(result);
     }
 
     // ────────────────────────────────────────────────
+    // SecurityContext에 들어 있는 principal에서 userId 추출
+    // 현재 프로젝트는 JwtAuthenticationFilter에서 principal로 Long userId를 넣고 있음
     private Long extractUserId(Authentication auth) {
         if (auth == null || auth.getPrincipal() == null) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다");
         }
+
         Object principal = auth.getPrincipal();
-        if (principal instanceof Long id) return id;
-        if (principal instanceof String s) return Long.valueOf(s);
+
+        if (principal instanceof Long id) {
+            return id;
+        }
+
+        if (principal instanceof String s) {
+            return Long.valueOf(s);
+        }
+
         throw new ApiException(HttpStatus.UNAUTHORIZED, "인증 정보가 올바르지 않습니다");
     }
 }
