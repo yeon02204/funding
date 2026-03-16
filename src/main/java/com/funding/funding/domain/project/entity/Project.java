@@ -178,6 +178,22 @@ public class Project extends BaseTimeEntity {
         if (this.currentAmount < amount) throw new IllegalStateException("currentAmount cannot be negative");
         this.currentAmount -= amount;
     }
+    
+    public void changeTitle(String title) {
+        this.title = title;
+    }
+
+    public void changeContent(String content) {
+        this.content = content;
+    }
+    
+    public void changeStartAt(LocalDateTime startAt) {
+        this.startAt = startAt;
+    }
+
+    public void changeDeadline(LocalDateTime deadline) {
+        this.deadline = deadline;
+    }
 
     // ────────────────────────────────────────
     // Getter
