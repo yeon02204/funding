@@ -25,8 +25,7 @@ public class User extends BaseTimeEntity {
     @Column(nullable = false, unique = true, length = 100)
     private String nickname;
 
-    // LOCAL 회원 비밀번호
-    // 소셜 회원(KAKAO / NAVER)은 null 가능
+    // LOCAL 회원 비밀번호 (소셜 회원은 null 가능)
     @Column(length = 255)
     private String password;
 
@@ -105,7 +104,7 @@ public class User extends BaseTimeEntity {
         user.provider = provider;
         user.providerId = providerId;
         user.profileImage = profileImage;
-        user.emailVerified = true; // 소셜 제공자 이메일 정보는 신뢰
+        user.emailVerified = true; // 소셜 제공자 이메일 정보 신뢰
         user.emailVerifiedAt = LocalDateTime.now();
         user.lastLoginAt = LocalDateTime.now();
         return user;
@@ -163,8 +162,12 @@ public class User extends BaseTimeEntity {
         this.suspendedReason = null;
     }
 
-    // 회원 탈퇴 (소프트 삭제)
-    // 실제 DB 삭제가 아니라 상태만 DELETED로 변경
+    // 회원 탈퇴
+    public void withdraw() {
+        this.status = UserStatus.DELETED;
+    }
+
+    // 회원 탈퇴 (사유 포함)
     public void withdraw(String reason) {
         this.status = UserStatus.DELETED;
         this.deletedReason = reason;

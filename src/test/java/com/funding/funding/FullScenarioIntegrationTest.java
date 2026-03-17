@@ -6,6 +6,7 @@ import com.funding.funding.domain.category.repository.CategoryRepository;
 import com.funding.funding.domain.project.entity.Project;
 import com.funding.funding.domain.project.entity.ProjectStatus;
 import com.funding.funding.domain.project.repository.ProjectRepository;
+import com.funding.funding.domain.project.service.create.ImageStorageService;
 import com.funding.funding.domain.user.dto.AuthDtos;
 import com.funding.funding.domain.user.entity.*;
 import com.funding.funding.domain.user.repository.UserRepository;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -43,6 +45,9 @@ class FullScenarioIntegrationTest {
     @Autowired private UserRepository userRepository;
     @Autowired private ProjectRepository projectRepository;
     @Autowired private CategoryRepository categoryRepository;
+
+    // S3 실제 호출 방지 — 통합 테스트에서는 이미지 저장 로직을 목으로 처리
+    @MockitoBean private ImageStorageService imageStorageService;
 
     private static long SEQ = System.currentTimeMillis();
 

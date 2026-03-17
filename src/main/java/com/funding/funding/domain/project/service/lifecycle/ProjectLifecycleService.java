@@ -44,16 +44,17 @@ public class ProjectLifecycleService {
     // 관리자 요청
     // ────────────────────────────────────────
 
-    // 심사 승인: REVIEW_REQUESTED → APPROVED
+    // 심사 승인: REVIEW_REQUESTED → APPROVED (→ startAt 지났으면 바로 FUNDING)
     @Transactional
     public void approve(Long projectId, Long adminId) {
         Project project = projectRepository.findById(projectId).orElseThrow();
 
-        // startAt이 이미 지났으면 바로 FUNDING으로
+        // 1단계: REVIEW_REQUESTED → APPROVED (정책상 필수 경유)
+        project.changeStatus(ProjectStatus.APPROVED, "ADMIN", adminId);
+
+        // 2단계: startAt이 이미 지났으면 바로 FUNDING으로
         if (project.getStartAt() != null && !project.getStartAt().isAfter(LocalDateTime.now())) {
             project.changeStatus(ProjectStatus.FUNDING, "ADMIN", adminId);
-        } else {
-            project.changeStatus(ProjectStatus.APPROVED, "ADMIN", adminId);
         }
     }
 
@@ -83,6 +84,13 @@ public class ProjectLifecycleService {
     public void completeDelete(Long projectId) {
         Project project = findProject(projectId);
         project.changeStatus(ProjectStatus.DELETED, "SYSTEM", 0L);
+    }
+
+    // 삭제 거절: DELETE_REQUESTED → FUNDING (관리자가 삭제 요청 반려)
+    @Transactional
+    public void rejectDelete(Long projectId, Long adminId) {
+        Project project = findProject(projectId);
+        project.changeStatus(ProjectStatus.FUNDING, "ADMIN", adminId);
     }
 
     // ────────────────────────────────────────

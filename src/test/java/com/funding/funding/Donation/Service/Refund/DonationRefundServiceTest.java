@@ -4,6 +4,8 @@ import com.funding.funding.domain.donation.entity.Donation;
 import com.funding.funding.domain.donation.repository.DonationRepository;
 import com.funding.funding.domain.donation.service.refund.DonationRefundService;
 import com.funding.funding.domain.donation.status.DonationStatus;
+import com.funding.funding.domain.project.entity.Project;
+import com.funding.funding.domain.project.repository.ProjectRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -14,19 +16,17 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 // ✅ 순수 단위 테스트 (Mockito)
-// - @SpringBootTest → Mockito mock()으로 전환
-//   이유: Donation 엔티티의 user_id, project_id, amount가 NOT NULL이라
-//        new Donation()만으로는 실제 DB에 저장 불가능
-// - Repository를 mock으로 교체해 DB 없이도 서비스 로직만 검증
 class DonationRefundServiceTest {
 
     private DonationRepository donationRepository;
+    private ProjectRepository  projectRepository;
     private DonationRefundService refundService;
 
     @BeforeEach
     void setUp() {
         donationRepository = mock(DonationRepository.class);
-        refundService = new DonationRefundService(donationRepository);
+        projectRepository  = mock(ProjectRepository.class);
+        refundService = new DonationRefundService(donationRepository, projectRepository);
     }
 
     /*
@@ -112,6 +112,12 @@ class DonationRefundServiceTest {
     private Donation createDonation(Long id, DonationStatus status) {
         Donation donation = new Donation();
         setField(donation, "id", id);
+        setField(donation, "amount", 1000L);
+
+        // decreaseCurrentAmount 호출 대비 — Project 목 주입
+        Project project = mock(Project.class);
+        setField(donation, "project", project);
+
         donation.setStatus(status);
         return donation;
     }

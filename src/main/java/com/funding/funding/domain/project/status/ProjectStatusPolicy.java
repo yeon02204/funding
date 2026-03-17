@@ -44,7 +44,7 @@ public final class ProjectStatusPolicy {
 
         // 삭제 요청 → 환불 완료 후 DELETED로만
         ALLOWED.put(ProjectStatus.DELETE_REQUESTED,
-                EnumSet.of(ProjectStatus.DELETED));
+                EnumSet.of(ProjectStatus.DELETED, ProjectStatus.FUNDING)); // FUNDING: 관리자 삭제 거절 시 복구
 
         // SUCCESS / FAILED / DELETED 는 종결 상태 → put 안 함 (기본 불허)
     }

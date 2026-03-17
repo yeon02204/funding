@@ -4,6 +4,7 @@ import com.funding.funding.domain.project.dto.ProjectSummaryResponse;
 import com.funding.funding.domain.project.entity.Project;
 import com.funding.funding.domain.project.entity.ProjectStatus;
 import com.funding.funding.domain.project.repository.LikeRepository;
+import com.funding.funding.domain.project.repository.ProjectImageRepository;
 import com.funding.funding.domain.project.repository.ProjectRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,17 +28,22 @@ class ProjectSearchServiceTest {
     private ProjectRepository projectRepository;
     private LikeRepository likeRepository;
     private ProjectViewService projectViewService;
+    private ProjectImageRepository projectImageRepository;
     private ProjectQueryService queryService;
 
     @BeforeEach
     void setUp() {
-        projectRepository  = mock(ProjectRepository.class);
-        likeRepository     = mock(LikeRepository.class);
-        projectViewService = mock(ProjectViewService.class);
-        queryService = new ProjectQueryService(projectRepository, likeRepository, projectViewService);
+        projectRepository    = mock(ProjectRepository.class);
+        likeRepository       = mock(LikeRepository.class);
+        projectViewService   = mock(ProjectViewService.class);
+        projectImageRepository = mock(ProjectImageRepository.class);
+        queryService = new ProjectQueryService(projectRepository, likeRepository, projectViewService, projectImageRepository);
 
-        // ✅ likeRepository mock 기본값 — 서비스 내부에서 트랜잭션 안에 매핑 시 호출됨
+        // ✅ likeRepository mock 기본값
         when(likeRepository.countByIdProjectId(anyLong())).thenReturn(0L);
+
+        // ✅ projectImageRepository mock 기본값 — 썸네일 없음
+        when(projectImageRepository.findByProjectIdAndThumbnailTrue(anyLong())).thenReturn(Optional.empty());
 
         // ✅ searchOrderByLikes mock 기본값
         when(projectRepository.searchOrderByLikes(any(), any(), any(), any(), any()))

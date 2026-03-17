@@ -9,6 +9,7 @@ import com.funding.funding.domain.user.entity.User;
 import com.funding.funding.domain.user.repository.UserRepository;
 import com.funding.funding.global.exception.ApiException;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,13 +22,16 @@ public class UserService {
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
     private final LikeRepository likeRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public UserService(UserRepository userRepository,
                        ProjectRepository projectRepository,
-                       LikeRepository likeRepository) {
+                       LikeRepository likeRepository,
+                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.projectRepository = projectRepository;
         this.likeRepository = likeRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     // ── 내 정보 조회 ──────────────────────────────────
@@ -87,6 +91,29 @@ public class UserService {
     // ── 관리자: 회원 목록 ─────────────────────────────
     public List<User> getAllUsers() {
         return userRepository.findAll();
+    }
+
+    // ── 타인 프로필 조회 ───────────────────────────────
+    @Transactional(readOnly = true)
+    public User getPublicProfile(Long userId) {
+        return findUser(userId);
+    }
+
+    // ── 회원 탈퇴 ──────────────────────────────────────
+    @Transactional
+    public void withdraw(Long userId) {
+        User user = findUser(userId);
+        user.withdraw();
+    }
+
+    // ── 비밀번호 변경 ────────────────────────────────────
+    @Transactional
+    public void changePassword(Long userId, String currentPassword, String newPassword) {
+        User user = findUser(userId);
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "현재 비밀번호가 올바르지 않습니다.");
+        }
+        user.changePassword(passwordEncoder.encode(newPassword));
     }
 
     // ── 공통 ──────────────────────────────────────────

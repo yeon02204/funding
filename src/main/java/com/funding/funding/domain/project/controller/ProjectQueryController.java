@@ -1,10 +1,12 @@
 package com.funding.funding.domain.project.controller;
 
-import io.swagger.v3.oas.annotations.tags.Tag;
+
 import com.funding.funding.domain.project.dto.ProjectDetailResponse;
 import com.funding.funding.domain.project.dto.ProjectSummaryResponse;
 import com.funding.funding.domain.project.entity.ProjectStatus;
+import com.funding.funding.domain.project.repository.ProjectImageRepository;
 import com.funding.funding.domain.project.service.query.ProjectQueryService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -18,9 +20,12 @@ import org.springframework.web.bind.annotation.*;
 public class ProjectQueryController {
 
     private final ProjectQueryService queryService;
+    private final ProjectImageRepository projectImageRepository;
 
-    public ProjectQueryController(ProjectQueryService queryService) {
-        this.queryService = queryService;
+    public ProjectQueryController(ProjectQueryService queryService,
+                                  ProjectImageRepository projectImageRepository) {
+        this.queryService             = queryService;
+        this.projectImageRepository   = projectImageRepository;
     }
 
     /*
@@ -59,9 +64,20 @@ public class ProjectQueryController {
      */
     @GetMapping("/{id}")
     public ProjectDetailResponse getOne(@PathVariable("id") Long id) {
-        return ProjectDetailResponse.from(
+        ProjectDetailResponse res = ProjectDetailResponse.from(
                 queryService.getOneWithViewCount(id),
                 queryService.getLikeCount(id)
         );
+
+        // 이미지 목록 채우기
+        var images = projectImageRepository.findByProjectId(id);
+        res.imageUrls    = images.stream().map(img -> img.getImageUrl()).toList();
+        res.thumbnailUrl = images.stream()
+                .filter(img -> img.isThumbnail())
+                .map(img -> img.getImageUrl())
+                .findFirst()
+                .orElse(res.imageUrls.isEmpty() ? null : res.imageUrls.get(0));
+
+        return res;
     }
 }

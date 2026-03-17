@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Field;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -75,6 +76,36 @@ public class FollowService {
     @Transactional(readOnly = true)
     public boolean isFollowing(Long followerId, Long followingId) {
         return followRepository.existsByIdFollowerIdAndIdFollowingId(followerId, followingId);
+    }
+
+    // 팔로워 목록 (나를 팔로우하는 사람들)
+    @Transactional(readOnly = true)
+    public List<User> getFollowers(Long userId) {
+        return followRepository.findByIdFollowingId(userId)
+                .stream()
+                .map(f -> {
+                    try {
+                        Field f2 = Follow.class.getDeclaredField("follower");
+                        f2.setAccessible(true);
+                        return (User) f2.get(f);
+                    } catch (Exception e) { throw new RuntimeException(e); }
+                })
+                .toList();
+    }
+
+    // 팔로잉 목록 (내가 팔로우하는 사람들)
+    @Transactional(readOnly = true)
+    public List<User> getFollowings(Long userId) {
+        return followRepository.findByIdFollowerId(userId)
+                .stream()
+                .map(f -> {
+                    try {
+                        Field f2 = Follow.class.getDeclaredField("following");
+                        f2.setAccessible(true);
+                        return (User) f2.get(f);
+                    } catch (Exception e) { throw new RuntimeException(e); }
+                })
+                .toList();
     }
 
     private static void setField(Object target, String fieldName, Object value) {

@@ -42,6 +42,7 @@ public class SecurityConfig {
         this.oAuth2AuthenticationFailureHandler = oAuth2AuthenticationFailureHandler;
     }
 
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
@@ -58,8 +59,9 @@ public class SecurityConfig {
                 // formLogin 비활성화 (세션 로그인 사용 안 함)
                 .formLogin(f -> f.disable())
 
-                // OAuth2 로그인 흐름에서는 세션이 일부 필요할 수 있으므로 IF_REQUIRED 사용
+                // 서버 세션을 사용하지 않는 Stateless 구조
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+//              .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 // 인증 안 된 사용자가 보호된 API 접근 시 401 응답 반환
                 .exceptionHandling(e -> e
@@ -79,24 +81,14 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
-                                "/h2-console/**",
-                                "/uploads/**"
+                                "/h2-console/**"
                         ).permitAll()
 
                         // 브라우저 preflight 요청 허용
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // 비로그인 허용 auth API만 개별 지정
-                        .requestMatchers(
-                                "/api/auth/register",
-                                "/api/auth/login",
-                                "/api/auth/refresh",
-                                "/api/auth/email/send",
-                                "/api/auth/email/verify",
-                                "/api/auth/find-email",
-                                "/api/auth/password/reset-request",
-                                "/api/auth/password/reset"
-                        ).permitAll()
+                        // 인증 관련 API는 비로그인 상태 허용
+                        .requestMatchers("/api/auth/**").permitAll()
 
                         // OAuth2 진입/콜백 URL 허용
                         .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
@@ -104,11 +96,13 @@ public class SecurityConfig {
                         // 공개 조회 API 허용
                         .requestMatchers(HttpMethod.GET, "/api/projects", "/api/projects/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories", "/api/categories/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/users/{userId}").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/{userId}/followers/count").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/{userId}/following/count").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/uploads/images").permitAll()
 
-                        // 그 외는 로그인 필요
-                        // /api/auth/logout, /api/auth/withdraw 도 여기 포함됨
+                        // 나머지는 인증 필요
                         .anyRequest().authenticated()
                 )
 

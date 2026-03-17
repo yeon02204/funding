@@ -1,80 +1,86 @@
 package com.funding.funding.domain.user.controller;
 
+import com.funding.funding.domain.user.entity.User;
 import com.funding.funding.domain.user.service.follow.FollowService;
-import com.funding.funding.global.security.JwtTokenProvider;
+import com.funding.funding.global.exception.ApiException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-// 팔로우 API
+import java.util.List;
+import java.util.Map;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/users")
 public class FollowController {
 
     private final FollowService followService;
-    private final JwtTokenProvider jwtTokenProvider;
 
-    /*
-      팔로우
-      POST /api/users/{userId}/follow
-     */
     @PostMapping("/{userId}/follow")
-    public ResponseEntity<Void> follow(
-            @PathVariable Long userId,
-            @RequestHeader("Authorization") String auth
-    ) {
-        Long myId = extractUserId(auth);
-        followService.follow(myId, userId);
+    public ResponseEntity<Void> follow(@PathVariable Long userId, Authentication auth) {
+        followService.follow(extractUserId(auth), userId);
         return ResponseEntity.noContent().build();
     }
 
-    /*
-      언팔로우
-      DELETE /api/users/{userId}/follow
-     */
     @DeleteMapping("/{userId}/follow")
-    public ResponseEntity<Void> unfollow(
-            @PathVariable Long userId,
-            @RequestHeader("Authorization") String auth
-    ) {
-        Long myId = extractUserId(auth);
-        followService.unfollow(myId, userId);
+    public ResponseEntity<Void> unfollow(@PathVariable Long userId, Authentication auth) {
+        followService.unfollow(extractUserId(auth), userId);
         return ResponseEntity.noContent().build();
     }
 
-    /*
-      팔로잉 수 (내가 팔로우하는 사람 수)
-      GET /api/users/{userId}/following/count
-     */
     @GetMapping("/{userId}/following/count")
     public ResponseEntity<Long> countFollowing(@PathVariable Long userId) {
         return ResponseEntity.ok(followService.countFollowing(userId));
     }
 
-    /*
-      팔로워 수 (나를 팔로우하는 사람 수)
-      GET /api/users/{userId}/followers/count
-     */
     @GetMapping("/{userId}/followers/count")
     public ResponseEntity<Long> countFollowers(@PathVariable Long userId) {
         return ResponseEntity.ok(followService.countFollowers(userId));
     }
 
-    /*
-      내가 이 유저를 팔로우하는지 확인
-      GET /api/users/{userId}/follow/me
-     */
     @GetMapping("/{userId}/follow/me")
-    public ResponseEntity<Boolean> isFollowing(
-            @PathVariable Long userId,
-            @RequestHeader("Authorization") String auth
-    ) {
-        Long myId = extractUserId(auth);
-        return ResponseEntity.ok(followService.isFollowing(myId, userId));
+    public ResponseEntity<Boolean> isFollowing(@PathVariable Long userId, Authentication auth) {
+        return ResponseEntity.ok(followService.isFollowing(extractUserId(auth), userId));
     }
 
-    private Long extractUserId(String auth) {
-        return jwtTokenProvider.getUserId(auth.replace("Bearer ", ""));
+    // 팔로워 목록
+    @GetMapping("/{userId}/followers")
+    public ResponseEntity<List<Map<String, Object>>> getFollowers(@PathVariable Long userId) {
+        List<Map<String, Object>> result = followService.getFollowers(userId)
+                .stream()
+                .map(u -> Map.<String, Object>of(
+                        "id",           u.getId(),
+                        "nickname",     u.getNickname(),
+                        "profileImage", u.getProfileImage() != null ? u.getProfileImage() : ""
+                ))
+                .toList();
+        return ResponseEntity.ok(result);
+    }
+
+    // 팔로잉 목록
+    @GetMapping("/{userId}/followings")
+    public ResponseEntity<List<Map<String, Object>>> getFollowings(@PathVariable Long userId) {
+        List<Map<String, Object>> result = followService.getFollowings(userId)
+                .stream()
+                .map(u -> Map.<String, Object>of(
+                        "id",           u.getId(),
+                        "nickname",     u.getNickname(),
+                        "profileImage", u.getProfileImage() != null ? u.getProfileImage() : ""
+                ))
+                .toList();
+        return ResponseEntity.ok(result);
+    }
+
+    private Long extractUserId(Authentication auth) {
+        if (auth == null || auth.getPrincipal() == null)
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        Object p = auth.getPrincipal();
+        if (p instanceof Long id) return id;
+        if (p instanceof com.funding.funding.global.security.CustomUserDetails u) return u.getUserId();
+        if (p instanceof String s) return Long.valueOf(s);
+        throw new ApiException(HttpStatus.UNAUTHORIZED, "인증 정보가 올바르지 않습니다.");
     }
 }

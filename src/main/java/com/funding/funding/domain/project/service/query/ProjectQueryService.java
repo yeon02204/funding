@@ -4,6 +4,7 @@ import com.funding.funding.domain.project.dto.ProjectSummaryResponse;
 import com.funding.funding.domain.project.entity.Project;
 import com.funding.funding.domain.project.entity.ProjectStatus;
 import com.funding.funding.domain.project.repository.LikeRepository;
+import com.funding.funding.domain.project.repository.ProjectImageRepository;
 import com.funding.funding.domain.project.repository.ProjectRepository;
 import com.funding.funding.global.exception.ApiException;
 import org.springframework.data.domain.Page;
@@ -13,22 +14,22 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// 실제 DB 조회 로직 담당(Repository 호출 담당)
-// 컨트롤러는 요청/응답만 하도록 얇게 유지
-
 @Service
 public class ProjectQueryService {
 
     private final ProjectRepository projectRepository;
     private final LikeRepository likeRepository;
     private final ProjectViewService projectViewService;
+    private final ProjectImageRepository projectImageRepository;
 
     public ProjectQueryService(ProjectRepository projectRepository,
                                LikeRepository likeRepository,
-                               ProjectViewService projectViewService) {
-        this.projectRepository  = projectRepository;
-        this.likeRepository     = likeRepository;
-        this.projectViewService = projectViewService;
+                               ProjectViewService projectViewService,
+                               ProjectImageRepository projectImageRepository) {
+        this.projectRepository      = projectRepository;
+        this.likeRepository         = likeRepository;
+        this.projectViewService     = projectViewService;
+        this.projectImageRepository = projectImageRepository;
     }
 
     // 단건 프로젝트 조회
@@ -104,7 +105,13 @@ public class ProjectQueryService {
             projects = projectRepository.search(status, categoryId, kw, tag, pageable);
         }
 
-        // ✅ 트랜잭션이 열린 상태에서 매핑 — category/owner Lazy 로딩 안전
-        return projects.map(p -> ProjectSummaryResponse.from(p, likeRepository.countByIdProjectId(p.getId())));
+        // 썸네일 URL 채워서 반환
+        return projects.map(p -> {
+            ProjectSummaryResponse r = ProjectSummaryResponse.from(p, likeRepository.countByIdProjectId(p.getId()));
+            projectImageRepository.findByProjectIdAndThumbnailTrue(p.getId())
+                    .ifPresent(img -> r.thumbnailUrl = img.getImageUrl());
+            r.ownerNickname = p.getOwner() != null ? p.getOwner().getNickname() : null;
+            return r;
+        });
     }
 }
