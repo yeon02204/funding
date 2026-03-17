@@ -2,7 +2,10 @@
 nixPkgs = ["jdk17"]
 
 [phases.build]
-cmds = ["./gradlew build -x test"]
+cmds = [
+    "export JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))",
+    "./gradlew build -x test"
+]
 
 [start]
 cmd = "java -jar build/libs/*.jar"
