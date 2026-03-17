@@ -2,4 +2,4 @@
 cmds = ["./gradlew build -x test"]
 
 [start]
-cmd = "java -jar build/libs/*.jar"
+cmd = "java $JAVA_OPTS -jar -Dserver.port=$PORT build/libs/$(ls build/libs/ | grep -v plain | grep jar)"
