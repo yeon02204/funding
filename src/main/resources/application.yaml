@@ -30,11 +30,14 @@ spring:
     password: ${MAIL_PASSWORD:test} #pvsq ugwi wwhy jmzv
     properties:
       mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-            required: true
+        host: smtp.gmail.com
+        port: 465
+        properties:
+          mail:
+            smtp:
+              auth: true
+              ssl:
+                enable: true
 
   security:
     oauth2:
