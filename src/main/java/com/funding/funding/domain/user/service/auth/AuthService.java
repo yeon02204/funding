@@ -79,7 +79,7 @@ public class AuthService {
                 req.nickname(),
                 passwordEncoder.encode(req.password()),
                 UserRole.USER,
-                UserStatus.PENDING,
+                UserStatus.ACTIVE,
                 AuthProvider.LOCAL
         );
 
