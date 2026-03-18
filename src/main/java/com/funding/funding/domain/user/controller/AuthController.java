@@ -2,6 +2,7 @@ package com.funding.funding.domain.user.controller;
 
 import com.funding.funding.domain.user.dto.AuthDtos;
 import com.funding.funding.domain.user.service.auth.AuthService;
+import com.funding.funding.domain.user.service.user.UserService;
 import com.funding.funding.global.exception.ApiException;
 import com.funding.funding.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,9 +23,11 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final UserService userService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, UserService userService) {
         this.authService = authService;
+        this.userService = userService;
     }
 
     // ─────────────────────────────────────────────
@@ -120,7 +123,7 @@ public class AuthController {
         Long userId = extractUserId(authentication);
 
         // 서버 측 탈퇴 처리
-        authService.withdraw(userId, req);
+        userService.withdraw(userId);
 
         // 브라우저 refreshToken 쿠키도 삭제
         deleteRefreshTokenCookie(response);
