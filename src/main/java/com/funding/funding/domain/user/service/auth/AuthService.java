@@ -62,8 +62,8 @@ public class AuthService {
     @Transactional
     public void register(AuthDtos.RegisterReq req) {
 
-        // 이메일 중복 체크
-        if (userRepository.existsByEmail(req.email())) {
+        // 이메일 중복 체크 (탈퇴한 계정 제외)
+        if (userRepository.existsByEmailAndStatusNot(req.email(), UserStatus.DELETED)) {
             throw new ApiException(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다.");
         }
 
@@ -79,7 +79,7 @@ public class AuthService {
                 req.nickname(),
                 passwordEncoder.encode(req.password()),
                 UserRole.USER,
-                UserStatus.ACTIVE, // 도메인을 사면 PENDING 으로 바꾸기
+                UserStatus.PENDING,
                 AuthProvider.LOCAL
         );
 
