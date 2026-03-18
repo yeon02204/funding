@@ -73,13 +73,13 @@ public class AuthService {
         }
 
         // LOCAL 회원 생성
-        // 비밀번호는 반드시 암호화해서 저장
+        // 이메일 인증 전까지는 PENDING 상태
         User user = new User(
                 req.email(),
                 req.nickname(),
                 passwordEncoder.encode(req.password()),
                 UserRole.USER,
-                UserStatus.ACTIVE,
+                UserStatus.PENDING,
                 AuthProvider.LOCAL
         );
 
@@ -113,6 +113,10 @@ public class AuthService {
 
         if (user.getStatus() == UserStatus.SUSPENDED) {
             throw new ApiException(HttpStatus.FORBIDDEN, "정지된 계정입니다.");
+        }
+
+        if (user.getStatus() == UserStatus.PENDING) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "이메일 인증이 필요합니다. 이메일을 확인해주세요.");
         }
 
         if (user.getStatus() != UserStatus.ACTIVE) {
@@ -290,38 +294,6 @@ public class AuthService {
     public void logout(Long userId) {
         // Redis에 저장된 RefreshToken 삭제
         refreshTokenService.delete(userId);
-    }
-
-    // 회원 탈퇴
-    @Transactional
-    public void withdraw(Long userId, AuthDtos.WithdrawReq req) {
-        // 로그인 사용자 조회
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
-
-        // 이미 탈퇴한 계정이면 중복 탈퇴 방지
-        if (user.getStatus() == UserStatus.DELETED) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "이미 탈퇴한 계정입니다.");
-        }
-
-        // LOCAL 계정만 현재 비밀번호 검증
-        // 소셜 회원(KAKAO / NAVER)은 비밀번호가 없으므로 검증하지 않음
-        if (user.getProvider() == AuthProvider.LOCAL) {
-            if (req.currentPassword() == null || req.currentPassword().isBlank()) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "현재 비밀번호를 입력해주세요.");
-            }
-
-            if (user.getPassword() == null ||
-                    !passwordEncoder.matches(req.currentPassword(), user.getPassword())) {
-                throw new ApiException(HttpStatus.UNAUTHORIZED, "현재 비밀번호가 일치하지 않습니다.");
-            }
-        }
-
-        // 상태를 DELETED로 변경 (소프트 삭제)
-        user.withdraw(req.reason());
-
-        // 탈퇴 후 재발급 방지를 위해 RefreshToken 제거
-        refreshTokenService.delete(user.getId());
     }
 
     // 이메일 인증 코드 발송
