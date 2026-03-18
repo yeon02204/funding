@@ -79,7 +79,7 @@ public class AuthService {
                 req.nickname(),
                 passwordEncoder.encode(req.password()),
                 UserRole.USER,
-                UserStatus.PENDING,
+                UserStatus.ACTIVE, // 도메인을 사면 PENDING 으로 바꾸기
                 AuthProvider.LOCAL
         );
 
