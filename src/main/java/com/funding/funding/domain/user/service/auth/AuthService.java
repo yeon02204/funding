@@ -67,8 +67,8 @@ public class AuthService {
             throw new ApiException(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다.");
         }
 
-        // 닉네임 중복 체크
-        if (userRepository.existsByNickname(req.nickname())) {
+        // 닉네임 중복 체크 (탈퇴한 계정 제외)
+        if (userRepository.existsByNicknameAndStatusNot(req.nickname(), UserStatus.DELETED)) {
             throw new ApiException(HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다.");
         }
 
