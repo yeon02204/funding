@@ -165,11 +165,16 @@ public class User extends BaseTimeEntity {
     // 회원 탈퇴
     public void withdraw() {
         this.status = UserStatus.DELETED;
+        // unique 제약 해제를 위해 이메일/닉네임 익명화
+        this.email    = "deleted_" + this.id + "_" + System.currentTimeMillis() + "@deleted.com";
+        this.nickname = "탈퇴한사용자_" + this.id;
     }
 
     // 회원 탈퇴 (사유 포함)
     public void withdraw(String reason) {
         this.status = UserStatus.DELETED;
         this.deletedReason = reason;
+        this.email    = "deleted_" + this.id + "_" + System.currentTimeMillis() + "@deleted.com";
+        this.nickname = "탈퇴한사용자_" + this.id;
     }
 }
