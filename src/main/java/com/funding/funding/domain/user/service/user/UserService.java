@@ -88,9 +88,11 @@ public class UserService {
         user.activate();
     }
 
-    // ── 관리자: 회원 목록 ─────────────────────────────
+    // ── 관리자: 회원 목록 (탈퇴 회원 제외) ─────────────────────────────
     public List<User> getAllUsers() {
-        return userRepository.findAll();
+        return userRepository.findAll().stream()
+                .filter(u -> u.getStatus() != com.funding.funding.domain.user.entity.UserStatus.DELETED)
+                .toList();
     }
 
     // ── 타인 프로필 조회 ───────────────────────────────
