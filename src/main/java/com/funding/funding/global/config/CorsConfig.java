@@ -24,7 +24,9 @@ public class CorsConfig {
                 "http://localhost:3000",
                 "http://127.0.0.1:5173",
                 "http://localhost:5173",
-                frontendUrl  // Railway 환경변수 FRONTEND_URL 값
+                "https://funding-frontend-theta.vercel.app",
+                "https://fundit.yeon.monster",
+                frontendUrl
         ));
 
         config.setAllowedMethods(List.of(
