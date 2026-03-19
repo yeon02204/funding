@@ -29,8 +29,8 @@ public class StatisticsService {
     public StatsResponse getStats() {
         StatsResponse r = new StatsResponse();
 
-        // 회원 통계
-        r.totalUsers = userRepository.count();
+        // 회원 통계 (탈퇴 회원 제외)
+        r.totalUsers = userRepository.countByStatusNot(UserStatus.DELETED);
         r.activeUsers = userRepository.countByStatus(UserStatus.ACTIVE);
         r.suspendedUsers = userRepository.countByStatus(UserStatus.SUSPENDED);
 
