@@ -79,14 +79,11 @@ public class AuthService {
                 req.nickname(),
                 passwordEncoder.encode(req.password()),
                 UserRole.USER,
-                UserStatus.PENDING,
+                UserStatus.ACTIVE,
                 AuthProvider.LOCAL
         );
 
         userRepository.save(user);
-
-        // 회원가입 직후 이메일 인증 코드 발송
-        sendVerificationCode(req.email());
     }
 
     // 일반 로그인
