@@ -114,6 +114,7 @@ public class User extends BaseTimeEntity {
     public void verifyEmail() {
         this.emailVerified = true;
         this.emailVerifiedAt = LocalDateTime.now();
+        this.status = UserStatus.ACTIVE;
     }
 
     // 비밀번호 변경
