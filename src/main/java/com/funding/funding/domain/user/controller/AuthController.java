@@ -7,6 +7,8 @@ import com.funding.funding.global.exception.ApiException;
 import com.funding.funding.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -179,38 +181,28 @@ public class AuthController {
     // 아래부터는 refreshToken 쿠키 공통 유틸
     // =========================================================
 
-    // refreshToken을 HttpOnly 쿠키로 저장
+    // refreshToken을 HttpOnly 쿠키로 저장 (SameSite=None + Secure — 크로스오리진 대응)
     private void addRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
-        Cookie cookie = new Cookie("refreshToken", refreshToken);
-
-        // JS(document.cookie)로 접근 불가
-        cookie.setHttpOnly(true);
-
-        // 사이트 전체 경로에서 사용
-        cookie.setPath("/");
-
-        // 7일 유지
-        cookie.setMaxAge(7 * 24 * 60 * 60);
-
-        // 개발(localhost)에서는 false
-        // 운영(HTTPS)에서는 반드시 true
-        cookie.setSecure(false);
-
-        response.addCookie(cookie);
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(7 * 24 * 60 * 60)
+                .sameSite("None")
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
     // refreshToken 쿠키 삭제
     private void deleteRefreshTokenCookie(HttpServletResponse response) {
-        Cookie cookie = new Cookie("refreshToken", null);
-
-        cookie.setHttpOnly(true);
-        cookie.setPath("/");
-
-        // 즉시 만료
-        cookie.setMaxAge(0);
-        cookie.setSecure(false);
-
-        response.addCookie(cookie);
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(0)
+                .sameSite("None")
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
     // 쿠키에서 refreshToken 추출
