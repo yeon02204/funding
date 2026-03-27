@@ -88,6 +88,7 @@ public class ProjectQueryService {
     public Page<ProjectSummaryResponse> search(
             ProjectStatus status,
             Long categoryId,
+            Long ownerId,
             String keyword,
             String tagName,
             String sortBy,
@@ -100,9 +101,9 @@ public class ProjectQueryService {
 
         if ("likes".equalsIgnoreCase(sortBy)) {
             Pageable noSort = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
-            projects = projectRepository.searchOrderByLikes(status, categoryId, kw, tag, noSort);
+            projects = projectRepository.searchOrderByLikes(status, categoryId, ownerId, kw, tag, noSort);
         } else {
-            projects = projectRepository.search(status, categoryId, kw, tag, pageable);
+            projects = projectRepository.search(status, categoryId, ownerId, kw, tag, pageable);
         }
 
         // 썸네일 URL 채워서 반환

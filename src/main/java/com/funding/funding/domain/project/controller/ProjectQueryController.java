@@ -51,9 +51,10 @@ public class ProjectQueryController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String tagName,  // ✅ 태그 필터
             @RequestParam(required = false) String sortBy,   // ✅ 인기순 정렬 ("likes")
+            @RequestParam(required = false) Long ownerId,        // 특정 유저 프로젝트만
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return queryService.search(status, categoryId, keyword, tagName, sortBy, pageable);
+        return queryService.search(status, categoryId, ownerId, keyword, tagName, sortBy, pageable);
     }
     /*
       프로젝트 단건 조회

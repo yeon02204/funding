@@ -63,6 +63,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             WHERE p.status <> com.funding.funding.domain.project.entity.ProjectStatus.DELETED
               AND (:status     IS NULL OR p.status = :status)
               AND (:categoryId IS NULL OR p.category.id = :categoryId)
+              AND (:ownerId    IS NULL OR p.owner.id = :ownerId)
               AND (:keyword    IS NULL
                    OR LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
                    OR EXISTS (
@@ -82,6 +83,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             WHERE p.status <> com.funding.funding.domain.project.entity.ProjectStatus.DELETED
               AND (:status     IS NULL OR p.status = :status)
               AND (:categoryId IS NULL OR p.category.id = :categoryId)
+              AND (:ownerId    IS NULL OR p.owner.id = :ownerId)
               AND (:keyword    IS NULL
                    OR LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
                    OR EXISTS (
@@ -100,6 +102,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     Page<Project> search(
             @Param("status")     ProjectStatus status,
             @Param("categoryId") Long categoryId,
+            @Param("ownerId")    Long ownerId,
             @Param("keyword")    String keyword,
             @Param("tagName")    String tagName,
             Pageable pageable
@@ -123,6 +126,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
                 WHERE p.status <> com.funding.funding.domain.project.entity.ProjectStatus.DELETED
                   AND (:status     IS NULL OR p.status = :status)
                   AND (:categoryId IS NULL OR p.category.id = :categoryId)
+                  AND (:ownerId    IS NULL OR p.owner.id = :ownerId)
                   AND (:keyword    IS NULL
                        OR LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
                        OR EXISTS (
@@ -143,6 +147,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
                 WHERE p.status <> com.funding.funding.domain.project.entity.ProjectStatus.DELETED
                   AND (:status     IS NULL OR p.status = :status)
                   AND (:categoryId IS NULL OR p.category.id = :categoryId)
+                  AND (:ownerId    IS NULL OR p.owner.id = :ownerId)
                   AND (:keyword    IS NULL
                        OR LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
                        OR EXISTS (
@@ -161,6 +166,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     Page<Project> searchOrderByLikes(
             @Param("status")     ProjectStatus status,
             @Param("categoryId") Long categoryId,
+            @Param("ownerId")    Long ownerId,
             @Param("keyword")    String keyword,
             @Param("tagName")    String tagName,
             Pageable pageable
