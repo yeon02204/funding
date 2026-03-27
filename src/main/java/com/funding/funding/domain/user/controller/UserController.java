@@ -105,7 +105,14 @@ public class UserController {
 
         List<ProjectSummaryResponse> result = userService.getLikedProjects(userId)
                 .stream()
-                .map(ProjectSummaryResponse::from)
+                .map(p -> {
+                    ProjectSummaryResponse r = ProjectSummaryResponse.from(p, 0L);
+                    projectImageRepository
+                            .findByProjectIdAndThumbnailTrue(p.getId())
+                            .ifPresent(img -> r.thumbnailUrl = img.getImageUrl());
+                    r.ownerNickname = p.getOwner() != null ? p.getOwner().getNickname() : null;
+                    return r;
+                })
                 .toList();
 
         return ApiResponse.ok(result);

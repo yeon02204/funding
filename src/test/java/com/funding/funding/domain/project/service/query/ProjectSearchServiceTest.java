@@ -46,7 +46,7 @@ class ProjectSearchServiceTest {
         when(projectImageRepository.findByProjectIdAndThumbnailTrue(anyLong())).thenReturn(Optional.empty());
 
         // ✅ searchOrderByLikes mock 기본값
-        when(projectRepository.searchOrderByLikes(any(), any(), any(), any(), any()))
+        when(projectRepository.searchOrderByLikes(any(), any(), any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of()));
     }
 
@@ -54,25 +54,25 @@ class ProjectSearchServiceTest {
     void 전체_조회_파라미터_없으면_null로_search_호출() {
         // given
         Pageable pageable = PageRequest.of(0, 10);
-        when(projectRepository.search(null, null, null, null, pageable))
+        when(projectRepository.search(null, null, null, null, null, pageable))
                 .thenReturn(new PageImpl<>(List.of()));
 
         // when — 반환 타입이 Page<ProjectSummaryResponse>로 변경됨
-        Page<ProjectSummaryResponse> result = queryService.search(null, null, null, null, null, pageable);
+        Page<ProjectSummaryResponse> result = queryService.search(null, null, null, null, null, null, pageable);
 
         // then
         assertNotNull(result);
-        verify(projectRepository).search(null, null, null, null, pageable);
+        verify(projectRepository).search(null, null, null, null, null, pageable);
     }
 
     @Test
     void status_필터_적용() {
         Pageable pageable = PageRequest.of(0, 10);
         Project p = makeProject(ProjectStatus.FUNDING);
-        when(projectRepository.search(ProjectStatus.FUNDING, null, null, null, pageable))
+        when(projectRepository.search(ProjectStatus.FUNDING, null, null, null, null, pageable))
                 .thenReturn(new PageImpl<>(List.of(p)));
 
-        Page<ProjectSummaryResponse> result = queryService.search(ProjectStatus.FUNDING, null, null, null, null, pageable);
+        Page<ProjectSummaryResponse> result = queryService.search(ProjectStatus.FUNDING, null, null, null, null, null, pageable);
 
         assertEquals(1, result.getTotalElements());
     }
@@ -81,57 +81,57 @@ class ProjectSearchServiceTest {
     void keyword가_빈문자열이면_null로_변환되어_search_호출() {
         // 빈 keyword는 null로 변환되어야 전체 검색으로 처리됨
         Pageable pageable = PageRequest.of(0, 10);
-        when(projectRepository.search(null, null, null, null, pageable))
+        when(projectRepository.search(null, null, null, null, null, pageable))
                 .thenReturn(new PageImpl<>(List.of()));
 
-        queryService.search(null, null, "   ", null, null, pageable);
+        queryService.search(null, null, null, "   ", null, null, pageable);
 
-        verify(projectRepository).search(null, null, null, null, pageable);
+        verify(projectRepository).search(null, null, null, null, null, pageable);
     }
 
     @Test
     void keyword가_있으면_trim되어_전달() {
         Pageable pageable = PageRequest.of(0, 10);
-        when(projectRepository.search(null, null, "카페", null, pageable))
+        when(projectRepository.search(null, null, null, "카페", null, pageable))
                 .thenReturn(new PageImpl<>(List.of()));
 
-        queryService.search(null, null, "  카페  ", null, null, pageable);
+        queryService.search(null, null, null, "  카페  ", null, null, pageable);
 
-        verify(projectRepository).search(null, null, "카페", null, pageable);
+        verify(projectRepository).search(null, null, null, "카페", null, pageable);
     }
 
     @Test
     void tagName이_있으면_태그_필터_적용() {
         Pageable pageable = PageRequest.of(0, 10);
         Project p = makeProject(ProjectStatus.FUNDING);
-        when(projectRepository.search(null, null, null, "환경", pageable))
+        when(projectRepository.search(null, null, null, null, "환경", pageable))
                 .thenReturn(new PageImpl<>(List.of(p)));
 
-        Page<ProjectSummaryResponse> result = queryService.search(null, null, null, "환경", null, pageable);
+        Page<ProjectSummaryResponse> result = queryService.search(null, null, null, null, "환경", null, pageable);
 
         assertEquals(1, result.getTotalElements());
-        verify(projectRepository).search(null, null, null, "환경", pageable);
+        verify(projectRepository).search(null, null, null, null, "환경", pageable);
     }
 
     @Test
     void tagName이_빈문자열이면_null로_변환() {
         Pageable pageable = PageRequest.of(0, 10);
-        when(projectRepository.search(null, null, null, null, pageable))
+        when(projectRepository.search(null, null, null, null, null, pageable))
                 .thenReturn(new PageImpl<>(List.of()));
 
-        queryService.search(null, null, null, "   ", null, pageable);
+        queryService.search(null, null, null, null, "   ", null, pageable);
 
-        verify(projectRepository).search(null, null, null, null, pageable);
+        verify(projectRepository).search(null, null, null, null, null, pageable);
     }
 
     @Test
     void sortBy가_likes이면_searchOrderByLikes_호출() {
         Pageable pageable = PageRequest.of(0, 10);
 
-        queryService.search(null, null, null, null, "likes", pageable);
+        queryService.search(null, null, null, null, null, "likes", pageable);
 
-        verify(projectRepository).searchOrderByLikes(null, null, null, null, PageRequest.of(0, 10));
-        verify(projectRepository, never()).search(any(), any(), any(), any(), any());
+        verify(projectRepository).searchOrderByLikes(null, null, null, null, null, PageRequest.of(0, 10));
+        verify(projectRepository, never()).search(any(), any(), any(), any(), any(), any());
     }
 
     private Project makeProject(ProjectStatus status) {
