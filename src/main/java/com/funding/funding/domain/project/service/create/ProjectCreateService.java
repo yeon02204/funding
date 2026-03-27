@@ -91,6 +91,28 @@ public class ProjectCreateService { // Spring이 자동으로 Bean으로 등록�
         return saved.getId();
     }
 
+    // 이미지 교체 (수정 시 사용)
+    @Transactional
+    public void updateImages(Long projectId, Long userId, int thumbnailIndex, List<MultipartFile> images) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "프로젝트를 찾을 수 없습니다."));
+
+        // 본인 프로젝트인지 검증
+        if (!project.getOwner().getId().equals(userId)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "본인 프로젝트만 수정할 수 있습니다.");
+        }
+
+        // 기존 이미지 전체 삭제
+        projectImageRepository.deleteByProjectId(projectId);
+
+        // 새 이미지 저장
+        for (int i = 0; i < images.size(); i++) {
+            String imageUrl = imageStorageService.save(images.get(i));
+            boolean isThumbnail = (i == thumbnailIndex);
+            projectImageRepository.save(new ProjectImage(project, imageUrl, isThumbnail));
+        }
+    }
+
     private void validateRequest(ProjectCreateRequest req) {
         // ✅ ownerId 검증 제거 (JWT에서 추출하므로 불필요)
 

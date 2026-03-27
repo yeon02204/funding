@@ -15,7 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.funding.funding.domain.project.dto.ProjectCreateRequest;
+import com.funding.funding.domain.project.dto.ProjectImageUpdateRequest;
 import com.funding.funding.domain.project.service.create.ProjectCreateService;
+import org.springframework.web.bind.annotation.PathVariable;
 
 @RestController
 @RequestMapping("/api/projects")
@@ -53,6 +55,16 @@ public class ProjectCreateController {
         throw new ApiException(HttpStatus.UNAUTHORIZED, "인증 정보가 올바르지 않습니다.");
     }
 
-    //  Swagger 테스트용 임시 API는 배포 시 제거할 것
-    // (현재는 불필요하므로 삭제)
+    // 이미지 교체: POST /api/projects/{id}/images
+    @PostMapping(value = "/{id}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Void> updateImages(
+            @PathVariable("id") Long projectId,
+            @RequestPart("request") ProjectImageUpdateRequest request,
+            @RequestPart("images") List<MultipartFile> images,
+            Authentication auth
+    ) {
+        Long userId = extractUserId(auth);
+        projectCreateService.updateImages(projectId, userId, request.thumbnailIndex(), images);
+        return ResponseEntity.ok().build();
+    }
 }
