@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -17,6 +18,8 @@ import org.springframework.web.multipart.MultipartFile;
 import com.funding.funding.domain.project.dto.ProjectCreateRequest;
 import com.funding.funding.domain.project.dto.ProjectImageUpdateRequest;
 import com.funding.funding.domain.project.service.create.ProjectCreateService;
+
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 @RestController
@@ -65,6 +68,17 @@ public class ProjectCreateController {
     ) {
         Long userId = extractUserId(auth);
         projectCreateService.updateImages(projectId, userId, request.thumbnailIndex(), images);
+        return ResponseEntity.ok().build();
+    }
+    
+    @DeleteMapping("/{id}/images")
+    public ResponseEntity<Void> deleteImage(
+            @PathVariable("id") Long projectId,
+            @RequestParam("imageUrl") String imageUrl,
+            Authentication auth
+    ) {
+        Long userId = extractUserId(auth);
+        projectCreateService.deleteImage(projectId, userId, imageUrl);
         return ResponseEntity.ok().build();
     }
 }

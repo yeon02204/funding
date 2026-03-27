@@ -14,4 +14,6 @@ public interface ProjectImageRepository extends JpaRepository<ProjectImage, Long
     Optional<ProjectImage> findByProjectIdAndThumbnailTrue(Long projectId);
     List<ProjectImage> findByProjectId(Long projectId);
     void deleteByProjectId(Long projectId);  // 이미지 교체 시 기존 이미지 전체 삭제
+    
+    void deleteByProjectIdAndImageUrl(Long projectId, String imageUrl);
 }

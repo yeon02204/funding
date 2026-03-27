@@ -150,4 +150,15 @@ public class ProjectCreateService { // Spring이 자동으로 Bean으로 등록�
             throw new ApiException(HttpStatus.BAD_REQUEST, "대표 이미지 번호가 올바르지 않습니다.");
         }
     }
+    
+    
+    @Transactional
+    public void deleteImage(Long projectId, Long userId, String imageUrl) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "프로젝트를 찾을 수 없습니다."));
+        if (!project.getOwner().getId().equals(userId)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "본인 프로젝트만 수정할 수 있습니다.");
+        }
+        projectImageRepository.deleteByProjectIdAndImageUrl(projectId, imageUrl);
+    }
 }
