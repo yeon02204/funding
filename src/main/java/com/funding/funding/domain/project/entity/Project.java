@@ -154,8 +154,8 @@ public class Project extends BaseTimeEntity {
     }
 
     public void validateEditable() {
-        if (this.status != ProjectStatus.DRAFT) {
-            throw new IllegalStateException("프로젝트는 초안 상태에서만 수정할 수 있습니다.");
+        if (this.status != ProjectStatus.DRAFT && this.status != ProjectStatus.REJECTED) {
+            throw new IllegalStateException("초안 또는 반려 상태에서만 수정할 수 있습니다.");
         }
     }
 
