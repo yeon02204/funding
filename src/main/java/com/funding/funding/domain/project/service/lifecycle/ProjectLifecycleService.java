@@ -32,12 +32,20 @@ public class ProjectLifecycleService {
         project.requestReview(userId);
     }
 
-    // 삭제 요청: FUNDING → DELETE_REQUESTED
+    // 삭제 요청: FUNDING / REVIEW_REQUESTED → DELETE_REQUESTED
     @Transactional
     public void requestDelete(Long projectId, Long userId) {
         Project project = findProject(projectId);
-        validateOwner(project, userId);  // ✅ 본인 소유 검증
+        validateOwner(project, userId);
         project.changeStatus(ProjectStatus.DELETE_REQUESTED, "USER", userId);
+    }
+
+    // 반려 프로젝트 즉시 삭제: REJECTED → DELETED
+    @Transactional
+    public void deleteRejected(Long projectId, Long userId) {
+        Project project = findProject(projectId);
+        validateOwner(project, userId);
+        project.changeStatus(ProjectStatus.DELETED, "USER", userId);
     }
 
     // ────────────────────────────────────────

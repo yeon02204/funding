@@ -38,6 +38,13 @@ public class ProjectLifecycleController {
         return ApiResponse.ok(null);
     }
 
+    // 반려 프로젝트 즉시 삭제 (본인만 가능)
+    @PostMapping("/{id}/delete-rejected")
+    public ApiResponse<Void> deleteRejected(@PathVariable("id") Long id, Authentication auth) {
+        lifecycleService.deleteRejected(id, extractUserId(auth));
+        return ApiResponse.ok(null);
+    }
+
     // ── 관리자 전용 ───────────────────────────────────
 
     @PreAuthorize("hasRole('ADMIN')")

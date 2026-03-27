@@ -19,12 +19,13 @@ public final class ProjectStatusPolicy {
         ALLOWED.put(ProjectStatus.DRAFT,
                 EnumSet.of(ProjectStatus.REVIEW_REQUESTED));
 
+        // 심사 중 → 삭제 요청 가능
         ALLOWED.put(ProjectStatus.REVIEW_REQUESTED,
-                EnumSet.of(ProjectStatus.APPROVED, ProjectStatus.REJECTED));
+                EnumSet.of(ProjectStatus.APPROVED, ProjectStatus.REJECTED, ProjectStatus.DELETE_REQUESTED));
 
-        // 반려된 프로젝트는 수정 후 재심사만 가능 (APPROVED 직행 불가)
+        // 반려된 프로젝트는 수정 후 재심사 또는 즉시 삭제 가능
         ALLOWED.put(ProjectStatus.REJECTED,
-                EnumSet.of(ProjectStatus.REVIEW_REQUESTED));
+                EnumSet.of(ProjectStatus.REVIEW_REQUESTED, ProjectStatus.DELETED));
 
         // 승인 이후 시작일 도달 시 FUNDING으로만 이동
         ALLOWED.put(ProjectStatus.APPROVED,
